@@ -1,4 +1,5 @@
 import React from 'react';
+import {ListingCardProps} from './Listing.types';
 
 /*
 This is the listing card component. It handles both the compact and description versions of the card.
@@ -7,42 +8,6 @@ The card displays the title, author, price, unit, image, topic, category,
 description (if in description version), and contact information (if in description version). 
 The event handler is passed down from the parent component to handle the click event on the card and button.
 */
-
-// Metadata to sort listing into correct category 
-enum Categories {
-    Skills = 'Skills',
-    Goods = 'Goods'
-}
-
-// Metadata to aid in filtering and searching for listings by topic 
-// NOTE: need to add more here and make it more specific
-enum Topics {
-    Programming = 'Programming',
-    Design = 'Design',
-    Writing = 'Writing',
-    Marketing = 'Marketing',
-    Tutoring = 'Tutoring',
-    Other = 'Other'
-}
-
-// Props for the listing card component. The version prop determines whether the card is in compact or description mode.
-interface ListingCardProps {
-    title: string;
-    author: string;
-    price: number;
-    unit: string;
-    imageUrl: string;
-    topic: Topics[]; 
-    category: Categories; 
-    version: 'compact' | 'description';
-
-    // Optional props to accomodate the description version of the card
-    description?: string; 
-    email?: string; 
-    phone?: string; 
-
-    eventHandler?: () => void; // Note: In the parent component, logic should be to "flip" the version of the card between compact and description when the button is clicked. So if the current version is compact, it should change to description, and vice versa.
-}
 
 
 export const ListingCard: React.FC<ListingCardProps> = ({title, author, price, unit, imageUrl, topic, category, description, email, phone, version, eventHandler}: ListingCardProps) => {
