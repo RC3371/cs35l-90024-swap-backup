@@ -1,5 +1,6 @@
 import { ListingCard } from '@/components/listing-card';
-import { Categories, Topics, ListingCardProps } from '../../components/Listing.types';
+import { ScrollView } from 'react-native';
+import { Categories, ListingCardProps, Topics } from '../../components/Listing.types';
 
 // Example data to test the feed component. Will switch to data from backend once we have that set up. 
 // Note: the version prop is set to 'compact' by default, but will be flipped to 'description' when the card is clicked, and vice versa. 
@@ -9,7 +10,7 @@ const database: ListingCardProps[] = [
         author: "John Doe", 
         price: 10.99, 
         unit: "hour", 
-        imageUrl: "/example-image.jpg", 
+        imageUrl: "../../assets/icon.png", 
         topic: [Topics.Programming], 
         category: Categories.Skills,
         version: 'compact' 
@@ -19,7 +20,7 @@ const database: ListingCardProps[] = [
         author: "Jane Smith",
         price: 5.00,
         unit: "item",       
-        imageUrl: "/another-image.jpg",
+        imageUrl: "../../assets/another-image.png",
         topic: [Topics.Design, Topics.Marketing], 
         category: Categories.Goods,
         version: 'compact'
@@ -29,7 +30,7 @@ const database: ListingCardProps[] = [
         author: "Alice Johnson",
         price: 20.00,
         unit: "hour",
-        imageUrl: "/tutoring-image.jpg",
+        imageUrl: "../../assets/tutoring-image.jpg",
         topic: [Topics.Tutoring],
         category: Categories.Skills,
         version: 'compact'
@@ -37,12 +38,12 @@ const database: ListingCardProps[] = [
 ];
 
 
-export function feed({database}: {database: ListingCardProps[]}) {
+export default function Feed() { 
     return (
-        <div className="feed">
-            {database.map((listing, index) => ( // map through the database and render a listing card for each listing. The key is set to the index of the listing in the database, but in a real application, it should be set to a unique identifier for each listing (e.g. listing ID from the backend).
+        <ScrollView style={{ flex: 1 }}> 
+            {database.map((listing, index) => (
                 <ListingCard key={index} {...listing} />
             ))}
-        </div>
+        </ScrollView>
     );
 }

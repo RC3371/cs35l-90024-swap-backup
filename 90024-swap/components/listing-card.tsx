@@ -1,48 +1,43 @@
 import React from 'react';
-import {ListingCardProps} from './Listing.types';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { ListingCardProps } from './Listing.types';
 
-/*
-This is the listing card component. It handles both the compact and description versions of the card.
-The parent component should handle the logic of flipping between the two versions when the button is clicked.
-The card displays the title, author, price, unit, image, topic, category, 
-description (if in description version), and contact information (if in description version). 
-The event handler is passed down from the parent component to handle the click event on the card and button.
-*/
+export const ListingCard: React.FC<ListingCardProps> = ({
+  title,
+  author,
+  price,
+  unit,
+  imageUrl,
+  topic,
+  category,
+  description,
+  email,
+  phone,
+  version,
+  eventHandler
+}) => {
+  return (
+    <TouchableOpacity onPress={eventHandler} style={{ padding: 10, borderBottomWidth: 1 }}>
+      <Image source={{ uri: imageUrl }} style={{ width: 100, height: 100 }} />
+      
+      <View>
+        <Text style={{ fontWeight: 'bold' }}>{title}</Text>
+        <Text>By {author}</Text>
+        <Text>${price} / {unit}</Text>
+        <Text>Category: {category}</Text>
+      </View>
 
+      {version !== 'compact' && (
+        <View>
+          <Text>{description}</Text>
+          {email && <Text>Email: {email}</Text>}
+          {phone && <Text>Phone: {phone}</Text>}
+        </View>
+      )}
 
-export const ListingCard: React.FC<ListingCardProps> = ({title, author, price, unit, imageUrl, topic, category, description, email, phone, version, eventHandler}: ListingCardProps) => {
-    if (version === 'compact') // UI if the card is in compact mode, which only shows the basic information about the listing. 
-    {
-        return (
-            <div className="compact-listing-card" onClick={eventHandler}>
-            <img src={imageUrl} alt={title} className="listing-image" />
-            <div className="listing-details">
-                <h3 className="listing-title">{title}</h3>
-                <p className="listing-author">By {author}</p>
-                <p className="listing-price">${price} / {unit}</p>
-                <p className="listing-topic">Topic: {topic.join(', ')}</p>
-                <p className="listing-category">Category: {category}</p>
-            </div>
-            <button onClick={eventHandler} className="listing-button">See more...</button>
-        </div>
-    );
-    } else { // UI if the card is in description mode, which shows all the information about the listing, including the description and contact information.
-        return (
-            <div className="description-listing-card" onClick={eventHandler}>
-                <img src={imageUrl} alt={title} className="listing-image" />
-                <div className="listing-details">
-                    <h3 className="listing-title">{title}</h3>
-                    <p className="listing-author">By {author}</p>
-                    <p className="listing-price">${price} / {unit}</p>
-                    <p className="listing-topic">Topic: {topic.join(', ')}</p>
-                    <p className="listing-category">Category: {category}</p>
-                    <p className="listing-description">Description: {description}</p>
-                    {email && <p className="listing-contact">Email: {email}</p>}
-                    {phone && <p className="listing-contact">Phone: {phone}</p>}
-                </div>
-                <button onClick={eventHandler} className="listing-button">See less...</button>
-            </div>
-        );
-
-    }
-}
+      <Text style={{ color: 'blue', marginTop: 5 }}>
+        {version === 'compact' ? "See more..." : "See less..."}
+      </Text>
+    </TouchableOpacity>
+  );
+};

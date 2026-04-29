@@ -1,9 +1,18 @@
-import { Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
 
-export default function HomePlaceholder() {
+export default function TabsLayout() {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 20, fontWeight: 'bold' }}>🚧 Work in Progress</Text>
-    </View>
+    <Tabs>
+      <Tabs.Screen
+        name="feed"
+        options={{
+          tabBarLabel: 'Feed',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" color={color} size={size} />
+          ),
+        }}
+      />
+    </Tabs>
   );
 }
