@@ -1,10 +1,12 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { Pressable } from 'react-native';
 
 export default function TabsLayout() {
-  const { signOut } = useAuth();
+  const { isLoggedIn, signOut } = useAuth();
+  // gate the protected area behind login
+  if (!isLoggedIn) return <Redirect href="/(auth)/login" />;
 
   return (
     <Tabs
