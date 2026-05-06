@@ -28,6 +28,15 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="addListing"
+        options={{
+          tabBarLabel: 'Add',
+          tabBarIcon: ({color, size}) => (
+            <Ionicons name="add-circle" color={color} size={size} />
+          )
+        }}
+      />
     </Tabs>
   );
 }
