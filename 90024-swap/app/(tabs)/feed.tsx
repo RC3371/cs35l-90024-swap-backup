@@ -1,5 +1,7 @@
 import { ListingCard } from '@/components/listing-card';
+import React from 'react';
 import { ScrollView } from 'react-native';
+import { FilterButton } from '../../components/FilterButton';
 import { Categories, ListingCardProps, Topics } from '../../components/Listing.types';
 
 // Example data to test the feed component. Will switch to data from backend once we have that set up. 
@@ -38,12 +40,57 @@ const database: ListingCardProps[] = [
 ];
 
 
+
 export default function Feed() { 
+
+    const topics = Object.values(Topics);
+    const categories = Object.values(Categories);
+
+    const [filterTopic, setFilterTopic] = React.useState<Topics[]>([])
+    function handleFilterTopic(topic: Topics) {
+        if (!filterTopic.includes(topic)) { // add topic to filter 
+            setFilterTopic([...filterTopic, topic]);
+        } else { // remove from filter list if userc clicks again 
+            setFilterTopic(filterTopic.filter(t => t !== topic));
+        }
+    }
+
+    const [filterCategory, setFilterCategory] = React.useState<Categories>(Categories.Skills); // default filter category is skills. 
+    function handleFilterCategory(category: Categories) { 
+        setFilterCategory(category);
+    }
+
+    let filteredData = database.filter(item => item.category === filterCategory); // filter by category first
+    if (filterTopic.length !== 0) {
+        filteredData = filteredData.filter(item => 
+            // filter by topic if in filter list.
+            item.topic.some(t => filterTopic.includes(t))
+        );
+    }
     return (
+        <>
+        {/* Display all data */}
         <ScrollView style={{ flex: 1 }}> 
-            {database.map((listing, index) => (
+            {filteredData.map((listing, index) => (
                 <ListingCard key={index} {...listing} />
             ))}
         </ScrollView>
+        {/* display filter buttons for topics and categories */}
+        <ScrollView style={{ flex: 1 }}>
+            {
+                topics.map((topic, index) => (
+                    <FilterButton key={index} text={topic} onPress={() => handleFilterTopic(topic)} />
+                ))
+            }
+        </ScrollView>
+                <ScrollView style={{ flex: 1 }}>
+            {
+                categories.map((category, index) => (
+                    <FilterButton key={index} text={category} onPress={() => handleFilterCategory(category)} />
+                ))
+            }
+        </ScrollView>
+        </>
+        
     );
 }
