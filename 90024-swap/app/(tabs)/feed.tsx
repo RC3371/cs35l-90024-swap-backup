@@ -2,6 +2,7 @@ import { ListingCard } from '@/components/listing-card';
 import React from 'react';
 import { ScrollView } from 'react-native';
 import { FilterButton } from '../../components/FilterButton';
+import {SearchBar} from '../../components/SearchBar';
 import { Categories, ListingCardProps, Topics } from '../../components/Listing.types';
 
 // Example data to test the feed component. Will switch to data from backend once we have that set up. 
@@ -43,10 +44,23 @@ const database: ListingCardProps[] = [
 
 export default function Feed() { 
 
-    const topics = Object.values(Topics);
-    const categories = Object.values(Categories);
+    // first filter by category by default
 
+    
+    const categories = Object.values(Categories);
+    const [filterCategory, setFilterCategory] = React.useState<Categories>(Categories.Skills); // default filter category is skills. 
+
+    function handleFilterCategory(category: Categories) { 
+        setFilterCategory(category);
+    }
+
+    let filteredData = database.filter(item => item.category === filterCategory); // filter by category first
+
+    // filter by topic if user has selected any topics to filter by
+
+    const topics = Object.values(Topics);
     const [filterTopic, setFilterTopic] = React.useState<Topics[]>([])
+
     function handleFilterTopic(topic: Topics) {
         if (!filterTopic.includes(topic)) { // add topic to filter 
             setFilterTopic([...filterTopic, topic]);
@@ -55,21 +69,35 @@ export default function Feed() {
         }
     }
 
-    const [filterCategory, setFilterCategory] = React.useState<Categories>(Categories.Skills); // default filter category is skills. 
-    function handleFilterCategory(category: Categories) { 
-        setFilterCategory(category);
-    }
-
-    let filteredData = database.filter(item => item.category === filterCategory); // filter by category first
     if (filterTopic.length !== 0) {
         filteredData = filteredData.filter(item => 
             // filter by topic if in filter list.
             item.topic.some(t => filterTopic.includes(t))
         );
     }
+
+    // Filter the data based on the search term
+
+    const [filterSearch, setFilterSearch] = React.useState('');
+    function handleFilterSearch(query: string) {
+        setFilterSearch(query); // filter by search term 
+    }
+
+
+    if (filterSearch.trim() !== '') {
+        filteredData = filteredData.filter(item => 
+            item.title.toLowerCase().includes(filterSearch.toLowerCase()) ||
+            item.description?.toLowerCase().includes(filterSearch.toLowerCase())
+        );
+    }
     return (
         <>
         {/* Display all data */}
+        <SearchBar
+            query={filterSearch}
+            onSearch={handleFilterSearch}
+        />
+        
         <ScrollView style={{ flex: 1 }}> 
             {filteredData.map((listing, index) => (
                 <ListingCard key={index} {...listing} />
