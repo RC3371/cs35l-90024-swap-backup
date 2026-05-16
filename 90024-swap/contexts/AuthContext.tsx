@@ -1,35 +1,56 @@
-import { createContext, ReactNode, useContext, useState } from 'react';
+import { auth } from '@/constants/firebaseConfig';
+import {
+  User,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+} from 'firebase/auth';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 type AuthContextValue = {
-  isLoggedIn: boolean;
-  signIn: () => void;
-  signOut: () => void;
+  user: User | null;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// holds in-memory auth state and exposes sign in/out to the whole app
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  const signIn = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const signUp = async (email: string, password: string) => {
+    await createUserWithEmailAndPassword(auth, email, password);
+  };
+
+  const signOut = async () => {
+    await firebaseSignOut(auth);
+  };
 
   return (
-    <AuthContext.Provider
-      value={{
-        isLoggedIn,
-        signIn: () => setIsLoggedIn(true),
-        signOut: () => setIsLoggedIn(false),
-      }}
-    >
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// hook for reading auth state; throws if used outside the provider
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used inside an AuthProvider');
-  }
+  if (!ctx) throw new Error('useAuth must be used inside an AuthProvider');
   return ctx;
 }

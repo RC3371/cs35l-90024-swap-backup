@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,24 +12,57 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+function firebaseErrorMessage(code: string): string {
+  switch (code) {
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return 'Invalid email or password.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists.';
+    case 'auth/weak-password':
+      return 'Password must be at least 6 characters.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please try again later.';
+    default:
+      return 'Something went wrong. Please try again.';
+  }
+}
+
 export default function LoginScreen() {
-  const { signIn } = useAuth();
+  const { signIn, signUp } = useAuth();
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       setError('Please enter a valid email address.');
       return;
     }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
       return;
     }
     setError(null);
-    signIn();
+    setLoading(true);
+    try {
+      if (isSignUp) {
+        await signUp(email.trim(), password);
+      } else {
+        await signIn(email.trim(), password);
+      }
+      // On success, onAuthStateChanged fires and the layout redirects automatically
+    } catch (e: any) {
+      setError(firebaseErrorMessage(e.code));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,7 +73,9 @@ export default function LoginScreen() {
       >
         <View style={styles.content}>
           <Text style={styles.title}>90024-Swap</Text>
-          <Text style={styles.subtitle}>Sign in to continue</Text>
+          <Text style={styles.subtitle}>
+            {isSignUp ? 'Create an account' : 'Sign in to continue'}
+          </Text>
 
           <View style={styles.field}>
             <Text style={styles.label}>Email</Text>
@@ -69,12 +105,32 @@ export default function LoginScreen() {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Pressable style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.buttonText}>Sign in</Text>
+          <Pressable
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.buttonText}>
+                {isSignUp ? 'Create account' : 'Sign in'}
+              </Text>
+            )}
           </Pressable>
 
-          <Pressable style={styles.linkButton} onPress={handleSubmit}>
-            <Text style={styles.linkText}>Create an account</Text>
+          <Pressable
+            style={styles.linkButton}
+            onPress={() => {
+              setIsSignUp(!isSignUp);
+              setError(null);
+            }}
+          >
+            <Text style={styles.linkText}>
+              {isSignUp
+                ? 'Already have an account? Sign in'
+                : "Don't have an account? Sign up"}
+            </Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -129,6 +185,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
+  buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
   linkButton: { alignItems: 'center', marginTop: 16 },
   linkText: { color: '#666', fontSize: 14 },
