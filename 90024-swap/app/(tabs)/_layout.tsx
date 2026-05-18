@@ -6,7 +6,7 @@ import { Pressable } from 'react-native';
 export default function TabsLayout() {
   const { user, loading, signOut } = useAuth();
   if (loading) return null;
-  if (!user) return <Redirect href="/(auth)/login" />;
+  if (!user || !user.emailVerified) return <Redirect href="/(auth)/login" />;
 
   return (
     <Tabs
