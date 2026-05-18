@@ -1,5 +1,7 @@
 import React from 'react';
-import { TextInput } from 'react-native/Libraries/Components/TextInput/TextInput';
+import { TextInput } from 'react-native';
+// import { TextInput } from 'react-native/Libraries/Components/TextInput/TextInput';
+// ^ use this for sims!
 
 
 export const SearchBar = ({query, onSearch}: {query: string; onSearch: (query: string) => void}) => {
@@ -7,7 +9,7 @@ export const SearchBar = ({query, onSearch}: {query: string; onSearch: (query: s
         <TextInput
             placeholder="Search for listings..."
             value={query}
-            onChangeText={() => onSearch(query)}
+            onChangeText={(text) => onSearch(text)}
         />
 
     );
