@@ -1,10 +1,10 @@
 import { ListingCard } from '@/components/listing-card';
 import React from 'react';
 import { ScrollView, View } from 'react-native';
-import { SegmentedControl } from '../../components/SegmentedControl';
-import { SearchBar } from '../../components/SearchBar';
-import { PillFilterCarousel, PillOption } from '../../components/PillFilterCarousel';
 import { Categories, ListingCardProps, Topics } from '../../components/Listing.types';
+import { PillFilterCarousel, PillOption } from '../../components/PillFilterCarousel';
+import { SearchBar } from '../../components/SearchBar';
+import { SegmentedControl } from '../../components/SegmentedControl';
 
 // Example data to test the feed component. Will switch to data from backend once we have that set up. 
 // Note: the version prop is set to 'compact' by default, but will be flipped to 'description' when the card is clicked, and vice versa. 
@@ -17,6 +17,9 @@ const database: ListingCardProps[] = [
         imageUrl: "../../assets/icon.png", 
         topic: [Topics.Programming], 
         category: Categories.Skills,
+        description: "This is an example listing for testing purposes. It offers programming services at a rate of $10.99 per hour. Contact me for more details!",
+        email: "johndoe@example.com",
+        phone: "123-456-7890",
         version: 'compact' 
     },
     {
