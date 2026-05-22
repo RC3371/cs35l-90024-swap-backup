@@ -2,7 +2,8 @@ import { ListingCard } from '@/components/listing-card';
 import React from 'react';
 import { ScrollView } from 'react-native';
 import { FilterButton } from '../../components/FilterButton';
-import {SearchBar} from '../../components/SearchBar';
+import { SegmentedControl } from '../../components/SegmentedControl';
+import { SearchBar } from '../../components/SearchBar';
 import { Categories, ListingCardProps, Topics } from '../../components/Listing.types';
 
 // Example data to test the feed component. Will switch to data from backend once we have that set up. 
@@ -47,7 +48,6 @@ export default function Feed() {
     // first filter by category by default
 
     
-    const categories = Object.values(Categories);
     const [filterCategory, setFilterCategory] = React.useState<Categories>(Categories.Skills); // default filter category is skills. 
 
     function handleFilterCategory(category: Categories) { 
@@ -97,6 +97,7 @@ export default function Feed() {
             query={filterSearch}
             onSearch={handleFilterSearch}
         />
+        <SegmentedControl value={filterCategory} onChange={handleFilterCategory} />
         
         <ScrollView style={{ flex: 1 }}> 
             {filteredData.map((listing, index) => (
@@ -108,13 +109,6 @@ export default function Feed() {
             {
                 topics.map((topic, index) => (
                     <FilterButton key={index} text={topic} onPress={() => handleFilterTopic(topic)} />
-                ))
-            }
-        </ScrollView>
-                <ScrollView style={{ flex: 1 }}>
-            {
-                categories.map((category, index) => (
-                    <FilterButton key={index} text={category} onPress={() => handleFilterCategory(category)} />
                 ))
             }
         </ScrollView>
