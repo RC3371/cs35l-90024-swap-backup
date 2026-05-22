@@ -1,8 +1,9 @@
 import { ListingCard } from '@/components/listing-card';
 import React from 'react';
-import { ScrollView } from 'react-native';
-import { FilterButton } from '../../components/FilterButton';
-import {SearchBar} from '../../components/SearchBar';
+import { ScrollView, View } from 'react-native';
+import { SegmentedControl } from '../../components/SegmentedControl';
+import { SearchBar } from '../../components/SearchBar';
+import { PillFilterCarousel, PillOption } from '../../components/PillFilterCarousel';
 import { Categories, ListingCardProps, Topics } from '../../components/Listing.types';
 
 // Example data to test the feed component. Will switch to data from backend once we have that set up. 
@@ -47,7 +48,6 @@ export default function Feed() {
     // first filter by category by default
 
     
-    const categories = Object.values(Categories);
     const [filterCategory, setFilterCategory] = React.useState<Categories>(Categories.Skills); // default filter category is skills. 
 
     function handleFilterCategory(category: Categories) { 
@@ -56,24 +56,10 @@ export default function Feed() {
 
     let filteredData = database.filter(item => item.category === filterCategory); // filter by category first
 
-    // filter by topic if user has selected any topics to filter by
+    const [selectedPill, setSelectedPill] = React.useState<PillOption>('All');
 
-    const topics = Object.values(Topics);
-    const [filterTopic, setFilterTopic] = React.useState<Topics[]>([])
-
-    function handleFilterTopic(topic: Topics) {
-        if (!filterTopic.includes(topic)) { // add topic to filter 
-            setFilterTopic([...filterTopic, topic]);
-        } else { // remove from filter list if userc clicks again 
-            setFilterTopic(filterTopic.filter(t => t !== topic));
-        }
-    }
-
-    if (filterTopic.length !== 0) {
-        filteredData = filteredData.filter(item => 
-            // filter by topic if in filter list.
-            item.topic.some(t => filterTopic.includes(t))
-        );
+    function handlePillSelect(option: PillOption) {
+        setSelectedPill(option);
     }
 
     // Filter the data based on the search term
@@ -91,34 +77,19 @@ export default function Feed() {
         );
     }
     return (
-        <>
-        {/* Display all data */}
-        <SearchBar
-            query={filterSearch}
-            onSearch={handleFilterSearch}
-        />
-        
-        <ScrollView style={{ flex: 1 }}> 
-            {filteredData.map((listing, index) => (
-                <ListingCard key={index} {...listing} />
-            ))}
-        </ScrollView>
-        {/* display filter buttons for topics and categories */}
-        <ScrollView style={{ flex: 1 }}>
-            {
-                topics.map((topic, index) => (
-                    <FilterButton key={index} text={topic} onPress={() => handleFilterTopic(topic)} />
-                ))
-            }
-        </ScrollView>
-                <ScrollView style={{ flex: 1 }}>
-            {
-                categories.map((category, index) => (
-                    <FilterButton key={index} text={category} onPress={() => handleFilterCategory(category)} />
-                ))
-            }
-        </ScrollView>
-        </>
-        
+        <View style={{ flex: 1 }}>
+            <SearchBar
+                query={filterSearch}
+                onSearch={handleFilterSearch}
+            />
+            <SegmentedControl value={filterCategory} onChange={handleFilterCategory} />
+            <PillFilterCarousel selectedOption={selectedPill} onSelect={handlePillSelect} />
+
+            <ScrollView style={{ flex: 1 }}>
+                {filteredData.map((listing, index) => (
+                    <ListingCard key={index} {...listing} />
+                ))}
+            </ScrollView>
+        </View>
     );
 }
