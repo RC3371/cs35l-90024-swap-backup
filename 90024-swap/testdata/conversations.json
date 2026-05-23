@@ -1,0 +1,42 @@
+{
+    "1": {
+        "conversationId": "1",
+        "recipient": "James James",
+        "recipeintId": "user_1",
+        "title": "Tutoring",
+        "messages": [
+            {
+                "messageId": "msg_1",
+                "senderId": "user_1",
+                "content": "Hey is this still available",
+                "timestamp": "2026-05-21T20:30:00Z"
+            },
+            {
+                "messageId": "msg_2",
+                "senderId": "user_2",
+                "content": "Yea it is",
+                "timestamp": "2026-05-21T20:35:00Z"
+            }
+        ]
+    },
+    "2": {
+        "conversationId": "2",
+        "recipient": "John J",
+        "recipeintId": "user_3",
+        "title": "Tutoring",
+        "messages": [
+            {
+                "messageId": "msg_1",
+                "senderId": "user_3",
+                "content": "Hey is this still available",
+                "timestamp": "2026-05-21T18:40:00Z"
+            },
+            {
+                "messageId": "msg_2",
+                "senderId": "user_2",
+                "content": "Nah it isn't",
+                "timestamp": "2026-05-21T18:42:00Z"
+            }
+        ]
+    }
+}

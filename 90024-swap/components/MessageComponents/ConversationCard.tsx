@@ -1,20 +1,24 @@
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 interface ConversationCardProps {
-    author: string;
+    recipient: string;
+    recipientId: string;
     title: string;
+    conversationId: string, 
     latestMessage: string;
     hoursAgo: number;
     eventHandler: () => void;
 }
 export const ConversationCard: React.FC<ConversationCardProps> = ({
-  author,
+  recipient,
+  recipientId,
   title,
+  conversationId,
   latestMessage,
   hoursAgo,
   eventHandler
 }) => {
-    const initials = author.split(' ').map(word => word[0]).join('')
+    const initials = recipient.split(' ').map(word => word[0]).join('')
     return (
     <TouchableOpacity onPress={eventHandler} style={{ padding: 10, borderWidth: 1 ,borderRadius: 10}}>
         <View style={{flexDirection:'row', justifyContent: "space-between"}}>
@@ -29,7 +33,7 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
                 <Text>{initials}</Text>
             </View>
             <View style={{flexDirection:'column'}}>
-                <Text>{author}</Text>
+                <Text>{recipient}</Text>
                 <Text>{title}</Text>
                 <Text>{latestMessage}</Text>
             </View>
