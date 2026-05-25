@@ -18,9 +18,11 @@ function firebaseErrorMessage(code: string): string {
     case 'auth/user-not-found':
     case 'auth/wrong-password':
     case 'auth/invalid-credential':
-      return 'Invalid email or password.';
+      return 'Invalid credentials. Check your email/user ID and password.';
     case 'auth/email-already-in-use':
       return 'An account with this email already exists.';
+    case 'auth/userid-taken':
+      return 'That user ID is already taken. Please pick another.';
     case 'auth/weak-password':
       return 'Password must be at least 6 characters.';
     case 'auth/invalid-email':
@@ -32,13 +34,17 @@ function firebaseErrorMessage(code: string): string {
   }
 }
 
+const USER_ID_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
+
 export default function LoginScreen() {
   const { signIn, signUp, signOut, resendVerification } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
+  // in sign-in mode this holds an email OR a user ID; in sign-up mode it must be an email
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [userId, setUserId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -52,15 +58,28 @@ export default function LoginScreen() {
   };
 
   const validate = () => {
-    const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail.endsWith('@ucla.edu')) {
-      setError('Please use your UCLA email (must end in @ucla.edu).');
+    const trimmedIdentifier = identifier.trim().toLowerCase();
+    if (!trimmedIdentifier) {
+      setError(isSignUp ? 'Please enter your UCLA email.' : 'Please enter your email or user ID.');
       return false;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      setError('Please enter a valid email address.');
-      return false;
+    if (isSignUp) {
+      if (!trimmedIdentifier.endsWith('@ucla.edu')) {
+        setError('Please use your UCLA email (must end in @ucla.edu).');
+        return false;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedIdentifier)) {
+        setError('Please enter a valid email address.');
+        return false;
+      }
+    } else if (trimmedIdentifier.includes('@')) {
+      // signing in with an email — still require it to be a valid email shape
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedIdentifier)) {
+        setError('Please enter a valid email address.');
+        return false;
+      }
     }
     if (password.length < 6) {
       setError('Password must be at least 6 characters.');
@@ -69,6 +88,10 @@ export default function LoginScreen() {
     if (isSignUp) {
       if (!displayName.trim()) {
         setError('Please enter your name.');
+        return false;
+      }
+      if (!USER_ID_REGEX.test(userId.trim())) {
+        setError('User ID must be 3-20 characters: letters, numbers, or underscores.');
         return false;
       }
       if (password !== confirmPassword) {
@@ -85,15 +108,21 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       if (isSignUp) {
-        await signUp(email.trim().toLowerCase(), password, displayName.trim());
+        await signUp(
+          identifier.trim().toLowerCase(),
+          password,
+          displayName.trim(),
+          userId.trim(),
+        );
         // signUp signs the user out; bring them back to the sign-in form with a message
         setIsSignUp(false);
         setPassword('');
         setConfirmPassword('');
         setDisplayName('');
+        setUserId('');
         setInfo('Account created! Check your email for a verification link, then sign in.');
       } else {
-        await signIn(email.trim().toLowerCase(), password);
+        await signIn(identifier.trim().toLowerCase(), password);
         // signIn succeeded — check verification status; bounce back out if not verified
         if (auth.currentUser && !auth.currentUser.emailVerified) {
           await signOut();
@@ -112,7 +141,7 @@ export default function LoginScreen() {
     clearMessages();
     setLoading(true);
     try {
-      await resendVerification(email.trim().toLowerCase(), password);
+      await resendVerification(identifier.trim().toLowerCase(), password);
       setInfo('Verification email sent. Check your inbox.');
     } catch (e: any) {
       setError(firebaseErrorMessage(e.code));
@@ -134,29 +163,44 @@ export default function LoginScreen() {
           </Text>
 
           {isSignUp && (
-            <View style={styles.field}>
-              <Text style={styles.label}>Name</Text>
-              <TextInput
-                style={styles.input}
-                autoCapitalize="words"
-                value={displayName}
-                onChangeText={setDisplayName}
-                placeholder="Bruin Bear"
-                placeholderTextColor="#AAA"
-              />
-            </View>
+            <>
+              <View style={styles.field}>
+                <Text style={styles.label}>Name</Text>
+                <TextInput
+                  style={styles.input}
+                  autoCapitalize="words"
+                  value={displayName}
+                  onChangeText={setDisplayName}
+                  placeholder="Bruin Bear"
+                  placeholderTextColor="#AAA"
+                />
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.label}>User ID</Text>
+                <TextInput
+                  style={styles.input}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={userId}
+                  onChangeText={setUserId}
+                  placeholder="bruinbear"
+                  placeholderTextColor="#AAA"
+                />
+              </View>
+            </>
           )}
 
           <View style={styles.field}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{isSignUp ? 'Email' : 'Email or User ID'}</Text>
             <TextInput
               style={styles.input}
               autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@ucla.edu"
+              autoCorrect={false}
+              autoComplete={isSignUp ? 'email' : 'username'}
+              keyboardType={isSignUp ? 'email-address' : 'default'}
+              value={identifier}
+              onChangeText={setIdentifier}
+              placeholder={isSignUp ? 'you@ucla.edu' : 'you@ucla.edu or bruinbear'}
               placeholderTextColor="#AAA"
             />
           </View>
