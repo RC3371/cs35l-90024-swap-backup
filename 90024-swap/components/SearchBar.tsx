@@ -1,4 +1,5 @@
 import React from 'react';
+<<<<<<< HEAD
 import { StyleSheet, TextInput, View } from 'react-native';
 
 export const SearchBar = ({
@@ -21,6 +22,17 @@ export const SearchBar = ({
                 returnKeyType="search"
             />
         </View>
+=======
+import { TextInput } from 'react-native';
+
+export const SearchBar = ({query, onSearch}: {query: string; onSearch: (query: string) => void}) => {
+    return(
+        <TextInput
+            placeholder="Search for listings..."
+            value={query}
+            onChangeText={onSearch}
+        />
+>>>>>>> user-ids
     );
 };
 

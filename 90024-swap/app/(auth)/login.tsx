@@ -1,6 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { auth } from '@/constants/firebaseConfig';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,24 +13,141 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function LoginScreen() {
-  const { signIn } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+function firebaseErrorMessage(code: string): string {
+  switch (code) {
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return 'Invalid credentials. Check your email/user ID and password.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists.';
+    case 'auth/userid-taken':
+      return 'That user ID is already taken. Please pick another.';
+    case 'auth/weak-password':
+      return 'Password must be at least 6 characters.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please try again later.';
+    default:
+      return 'Something went wrong. Please try again.';
+  }
+}
 
-  const handleSubmit = () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
-      return;
-    }
+const USER_ID_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
+
+export default function LoginScreen() {
+  const { signIn, signUp, signOut, resendVerification } = useAuth();
+  const [isSignUp, setIsSignUp] = useState(false);
+  // in sign-in mode this holds an email OR a user ID; in sign-up mode it must be an email
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [userId, setUserId] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  // when sign-in succeeds but email isn't verified, surface a "resend" affordance
+  const [showResend, setShowResend] = useState(false);
+
+  const clearMessages = () => {
     setError(null);
-    signIn();
+    setInfo(null);
+    setShowResend(false);
+  };
+
+  const validate = () => {
+    const trimmedIdentifier = identifier.trim().toLowerCase();
+    if (!trimmedIdentifier) {
+      setError(isSignUp ? 'Please enter your UCLA email.' : 'Please enter your email or user ID.');
+      return false;
+    }
+    if (isSignUp) {
+      if (!trimmedIdentifier.endsWith('@ucla.edu')) {
+        setError('Please use your UCLA email (must end in @ucla.edu).');
+        return false;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedIdentifier)) {
+        setError('Please enter a valid email address.');
+        return false;
+      }
+    } else if (trimmedIdentifier.includes('@')) {
+      // signing in with an email — still require it to be a valid email shape
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedIdentifier)) {
+        setError('Please enter a valid email address.');
+        return false;
+      }
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return false;
+    }
+    if (isSignUp) {
+      if (!displayName.trim()) {
+        setError('Please enter your name.');
+        return false;
+      }
+      if (!USER_ID_REGEX.test(userId.trim())) {
+        setError('User ID must be 3-20 characters: letters, numbers, or underscores.');
+        return false;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    clearMessages();
+    if (!validate()) return;
+    setLoading(true);
+    try {
+      if (isSignUp) {
+        await signUp(
+          identifier.trim().toLowerCase(),
+          password,
+          displayName.trim(),
+          userId.trim(),
+        );
+        // signUp signs the user out; bring them back to the sign-in form with a message
+        setIsSignUp(false);
+        setPassword('');
+        setConfirmPassword('');
+        setDisplayName('');
+        setUserId('');
+        setInfo('Account created! Check your email for a verification link, then sign in.');
+      } else {
+        await signIn(identifier.trim().toLowerCase(), password);
+        // signIn succeeded — check verification status; bounce back out if not verified
+        if (auth.currentUser && !auth.currentUser.emailVerified) {
+          await signOut();
+          setError('Please verify your email before signing in.');
+          setShowResend(true);
+        }
+      }
+    } catch (e: any) {
+      setError(firebaseErrorMessage(e.code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    clearMessages();
+    setLoading(true);
+    try {
+      await resendVerification(identifier.trim().toLowerCase(), password);
+      setInfo('Verification email sent. Check your inbox.');
+    } catch (e: any) {
+      setError(firebaseErrorMessage(e.code));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,18 +158,49 @@ export default function LoginScreen() {
       >
         <View style={styles.content}>
           <Text style={styles.title}>90024-Swap</Text>
-          <Text style={styles.subtitle}>Sign in to continue</Text>
+          <Text style={styles.subtitle}>
+            {isSignUp ? 'Create an account' : 'Sign in to continue'}
+          </Text>
+
+          {isSignUp && (
+            <>
+              <View style={styles.field}>
+                <Text style={styles.label}>Name</Text>
+                <TextInput
+                  style={styles.input}
+                  autoCapitalize="words"
+                  value={displayName}
+                  onChangeText={setDisplayName}
+                  placeholder="Bruin Bear"
+                  placeholderTextColor="#AAA"
+                />
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.label}>User ID</Text>
+                <TextInput
+                  style={styles.input}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={userId}
+                  onChangeText={setUserId}
+                  placeholder="bruinbear"
+                  placeholderTextColor="#AAA"
+                />
+              </View>
+            </>
+          )}
 
           <View style={styles.field}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{isSignUp ? 'Email' : 'Email or User ID'}</Text>
             <TextInput
               style={styles.input}
               autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@ucla.edu"
+              autoCorrect={false}
+              autoComplete={isSignUp ? 'email' : 'username'}
+              keyboardType={isSignUp ? 'email-address' : 'default'}
+              value={identifier}
+              onChangeText={setIdentifier}
+              placeholder={isSignUp ? 'you@ucla.edu' : 'you@ucla.edu or bruinbear'}
               placeholderTextColor="#AAA"
             />
           </View>
@@ -67,14 +217,55 @@ export default function LoginScreen() {
             />
           </View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {isSignUp && (
+            <View style={styles.field}>
+              <Text style={styles.label}>Confirm password</Text>
+              <TextInput
+                style={styles.input}
+                secureTextEntry
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="••••••••"
+                placeholderTextColor="#AAA"
+              />
+            </View>
+          )}
 
-          <Pressable style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.buttonText}>Sign in</Text>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {info ? <Text style={styles.info}>{info}</Text> : null}
+
+          <Pressable
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.buttonText}>
+                {isSignUp ? 'Create account' : 'Sign in'}
+              </Text>
+            )}
           </Pressable>
 
-          <Pressable style={styles.linkButton} onPress={handleSubmit}>
-            <Text style={styles.linkText}>Create an account</Text>
+          {showResend && (
+            <Pressable style={styles.linkButton} onPress={handleResend} disabled={loading}>
+              <Text style={styles.linkText}>Resend verification email</Text>
+            </Pressable>
+          )}
+
+          <Pressable
+            style={styles.linkButton}
+            onPress={() => {
+              setIsSignUp(!isSignUp);
+              clearMessages();
+            }}
+          >
+            <Text style={styles.linkText}>
+              {isSignUp
+                ? 'Already have an account? Sign in'
+                : "Don't have an account? Sign up"}
+            </Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -122,6 +313,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 12,
   },
+  info: {
+    color: '#2B7A0B',
+    fontSize: 13,
+    marginBottom: 12,
+  },
   button: {
     backgroundColor: '#1A1A1A',
     borderRadius: 12,
@@ -129,6 +325,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
+  buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
   linkButton: { alignItems: 'center', marginTop: 16 },
   linkText: { color: '#666', fontSize: 14 },

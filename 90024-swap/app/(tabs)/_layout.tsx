@@ -4,16 +4,16 @@ import { Redirect, Tabs } from 'expo-router';
 import { Pressable } from 'react-native';
 
 export default function TabsLayout() {
-  const { isLoggedIn, signOut } = useAuth();
-  // gate the protected area behind login
-  if (!isLoggedIn) return <Redirect href="/(auth)/login" />;
+  const { user, loading, signOut } = useAuth();
+  if (loading) return null;
+  if (!user || !user.emailVerified) return <Redirect href="/(auth)/login" />;
 
   return (
     <Tabs
       screenOptions={{
         // logout icon in the header so we can bounce back to the login screen
         headerRight: () => (
-          <Pressable onPress={signOut} style={{ paddingHorizontal: 16 }}>
+          <Pressable onPress={() => signOut()} style={{ paddingHorizontal: 16 }}>
             <Ionicons name="log-out-outline" size={22} color="#1A1A1A" />
           </Pressable>
         ),
