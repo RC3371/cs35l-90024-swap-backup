@@ -21,7 +21,6 @@ export interface ListingCardProps {
     author: string;
     price: number;
     unit: string;
-    imageUrl: string;
     topic: Topics[]; 
     category: Categories; 
     version: 'compact' | 'description';

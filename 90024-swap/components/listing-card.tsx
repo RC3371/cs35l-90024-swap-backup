@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ListingCardProps } from './Listing.types';
 
 
@@ -9,7 +9,6 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   author,
   price,
   unit,
-  imageUrl,
   topic,
   category,
   description,
@@ -22,7 +21,6 @@ export const ListingCard: React.FC<ListingCardProps> = ({
 
   return (
     <TouchableOpacity onPress={eventHandler} style={styles.card} activeOpacity={0.9}>
-      <Image source={{ uri: imageUrl }} style={styles.image} />
 
       <View style={styles.content}>
         <View style={styles.headerRow}>
@@ -80,14 +78,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'flex-start',
     borderRadius: 8 
-  },
-  image: {
-    width: 96,
-    height: 96,
-    borderRadius: 8,
-    marginRight: 12,
-    backgroundColor: '#f0f0f0',
-    resizeMode: 'cover'
   },
   content: {
     flex: 1,

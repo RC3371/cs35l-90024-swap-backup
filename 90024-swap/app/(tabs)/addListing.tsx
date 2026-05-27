@@ -17,12 +17,11 @@ export default function AddListing() {
     author: '',
     price: 0,
     unit: '',
-    imageUrl: '',
-    topic: [],
+    topic: [], 
     category: Categories.Skills,
     version: 'compact',
-    description: '',
-    email: '',
+    description: '', 
+    email: '', 
     phone: ''
   });
 
@@ -81,6 +80,7 @@ export default function AddListing() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.screen}>
+        {/* Header Section */}
         <View style={styles.header}>
           <Text style={styles.title}>Create Listing</Text>
           <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
@@ -89,6 +89,8 @@ export default function AddListing() {
         </View>
 
         <ScrollView contentContainerStyle={styles.form} showsVerticalScrollIndicator={false}>
+          
+          {/* Listing Title */}
           <View style={styles.fieldGroup}>
             {renderLabel('Listing Title')}
             <TextInput
@@ -96,15 +98,16 @@ export default function AddListing() {
                 styles.input,
                 focusedField === 'title' && styles.inputFocus
               ]}
-              placeholder="Listing name"
+              placeholder="e.g., Physics 1A Tutoring"
               placeholderTextColor="#999"
               value={newListing.title}
-              onChangeText={text => handleInputChange('title', text)}
+              onChangeText={(text) => handleInputChange('title', text)}
               onFocus={() => setFocusedField('title')}
               onBlur={() => setFocusedField('')}
             />
           </View>
 
+          {/* Author Name */}
           <View style={styles.fieldGroup}>
             {renderLabel('Your Name')}
             <TextInput
@@ -112,15 +115,16 @@ export default function AddListing() {
                 styles.input,
                 focusedField === 'author' && styles.inputFocus
               ]}
-              placeholder="Your name"
+              placeholder="Bruin Bear"
               placeholderTextColor="#999"
               value={newListing.author}
-              onChangeText={text => handleInputChange('author', text)}
+              onChangeText={(text) => handleInputChange('author', text)}
               onFocus={() => setFocusedField('author')}
               onBlur={() => setFocusedField('')}
             />
           </View>
 
+          {/* Price & Unit Row */}
           <View style={styles.row}>
             <View style={[styles.fieldGroup, styles.halfWidth]}>
               {renderLabel('Price')}
@@ -132,8 +136,8 @@ export default function AddListing() {
                 placeholder="$0.00"
                 placeholderTextColor="#999"
                 keyboardType="numeric"
-                value={newListing.price.toString()}
-                onChangeText={text => handleInputChange('price', text)}
+                value={newListing.price === 0 ? '' : newListing.price.toString()}
+                onChangeText={(text) => handleInputChange('price', text)}
                 onFocus={() => setFocusedField('price')}
                 onBlur={() => setFocusedField('')}
               />
@@ -146,32 +150,17 @@ export default function AddListing() {
                   styles.input,
                   focusedField === 'unit' && styles.inputFocus
                 ]}
-                placeholder="hour / item"
+                placeholder="e.g., hour / item"
                 placeholderTextColor="#999"
                 value={newListing.unit}
-                onChangeText={text => handleInputChange('unit', text)}
+                onChangeText={(text) => handleInputChange('unit', text)}
                 onFocus={() => setFocusedField('unit')}
                 onBlur={() => setFocusedField('')}
               />
             </View>
           </View>
 
-          <View style={styles.fieldGroup}>
-            {renderLabel('Image URL')}
-            <TextInput
-              style={[
-                styles.input,
-                focusedField === 'imageUrl' && styles.inputFocus
-              ]}
-              placeholder="https://image-of-product"
-              placeholderTextColor="#999"
-              value={newListing.imageUrl}
-              onChangeText={text => handleInputChange('imageUrl', text)}
-              onFocus={() => setFocusedField('imageUrl')}
-              onBlur={() => setFocusedField('')}
-            />
-          </View>
-
+          {/* Topics Accordion/Dropdown */}
           <View style={styles.fieldGroup}>
             {renderLabel('Topics')}
             <TouchableOpacity
@@ -186,32 +175,30 @@ export default function AddListing() {
               }}
             >
               <Text style={styles.selectText}>
-                {newListing.topic.length
+                {newListing.topic.length > 0
                   ? newListing.topic.join(', ')
-                  : 'Pick one or more topics'}
+                  : 'Select relevant campus topics'}
               </Text>
-              <Text style={styles.chevron}>
-                {topicDropdownOpen ? '▲' : '▼'}
-              </Text>
+              <Text style={styles.chevron}>{topicDropdownOpen ? '▲' : '▼'}</Text>
             </TouchableOpacity>
 
             {topicDropdownOpen && (
               <View style={styles.dropdownList}>
                 {topics.map((topic, index) => {
-                  const selected = newListing.topic.includes(topic);
+                  const isSelected = newListing.topic.includes(topic);
                   return (
                     <TouchableOpacity
                       key={index}
                       style={[
                         styles.dropdownItem,
-                        selected && styles.dropdownItemSelected
+                        isSelected && styles.dropdownItemSelected
                       ]}
                       onPress={() => toggleTopic(topic)}
                     >
                       <Text
                         style={[
                           styles.dropdownItemText,
-                          selected && styles.dropdownItemTextSelected
+                          isSelected && styles.dropdownItemTextSelected
                         ]}
                       >
                         {topic}
@@ -223,6 +210,7 @@ export default function AddListing() {
             )}
           </View>
 
+          {/* Category Accordion/Dropdown */}
           <View style={styles.fieldGroup}>
             {renderLabel('Category')}
             <TouchableOpacity
@@ -237,36 +225,38 @@ export default function AddListing() {
               }}
             >
               <Text style={styles.selectText}>{newListing.category}</Text>
-              <Text style={styles.chevron}>
-                {categoryDropdownOpen ? '▲' : '▼'}
-              </Text>
+              <Text style={styles.chevron}>{categoryDropdownOpen ? '▲' : '▼'}</Text>
             </TouchableOpacity>
 
             {categoryDropdownOpen && (
               <View style={styles.dropdownList}>
-                {categories.map((category, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.dropdownItem,
-                      newListing.category === category && styles.dropdownItemSelected
-                    ]}
-                    onPress={() => addCategory(category)}
-                  >
-                    <Text
+                {categories.map((category, index) => {
+                  const isSelected = newListing.category === category;
+                  return (
+                    <TouchableOpacity
+                      key={index}
                       style={[
-                        styles.dropdownItemText,
-                        newListing.category === category && styles.dropdownItemTextSelected
+                        styles.dropdownItem,
+                        isSelected && styles.dropdownItemSelected
                       ]}
+                      onPress={() => addCategory(category)}
                     >
-                      {category}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={[
+                          styles.dropdownItemText,
+                          isSelected && styles.dropdownItemTextSelected
+                        ]}
+                      >
+                        {category}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             )}
           </View>
 
+          {/* Description */}
           <View style={styles.fieldGroup}>
             {renderLabel('Description')}
             <TextInput
@@ -274,7 +264,7 @@ export default function AddListing() {
                 styles.textarea,
                 focusedField === 'description' && styles.inputFocus
               ]}
-              placeholder="Describe your listing"
+              placeholder="Describe what you are offering to the UCLA community..."
               placeholderTextColor="#999"
               multiline
               value={newListing.description}
@@ -284,6 +274,7 @@ export default function AddListing() {
             />
           </View>
 
+          {/* Email Contact */}
           <View style={styles.fieldGroup}>
             {renderLabel('Email')}
             <TextInput
@@ -291,7 +282,7 @@ export default function AddListing() {
                 styles.input,
                 focusedField === 'email' && styles.inputFocus
               ]}
-              placeholder="username@gmail.com"
+              placeholder="yourname@g.ucla.edu"
               placeholderTextColor="#999"
               keyboardType="email-address"
               value={newListing.email}
@@ -301,6 +292,7 @@ export default function AddListing() {
             />
           </View>
 
+          {/* Phone Contact */}
           <View style={styles.fieldGroup}>
             {renderLabel('Phone')}
             <TextInput
@@ -308,7 +300,7 @@ export default function AddListing() {
                 styles.input,
                 focusedField === 'phone' && styles.inputFocus
               ]}
-              placeholder="000-000-0000"
+              placeholder="310-825-4321"
               placeholderTextColor="#999"
               keyboardType="phone-pad"
               value={newListing.phone}
@@ -317,8 +309,10 @@ export default function AddListing() {
               onBlur={() => setFocusedField('')}
             />
           </View>
+
         </ScrollView>
 
+        {/* Footer/Action Buttons */}
         <View style={styles.footer}>
           <TouchableOpacity style={[styles.actionButton, styles.cancelAction]} onPress={handleClose}>
             <Text style={styles.cancelText}>Cancel</Text>
@@ -417,14 +411,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   selectText: {
-    color: '#111'
+    color: '#111',
+    flex: 1
   },
   chevron: {
     color: '#6b7280',
-    fontSize: 14
+    fontSize: 14,
+    marginLeft: 8
   },
   dropdownList: {
-    marginTop: 8,
+    marginTop: 4,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRadius: 12,
@@ -470,7 +466,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     padding: 16,
-    backgroundColor: '#f8f9fb'
+    backgroundColor: '#f8f9fb',
+    borderTopWidth: 1,
+    borderTopColor: '#eef2ff'
   },
   actionButton: {
     flex: 1,
