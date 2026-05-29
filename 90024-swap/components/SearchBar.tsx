@@ -1,5 +1,4 @@
 import React from 'react';
-<<<<<<< HEAD
 import { StyleSheet, TextInput, View } from 'react-native';
 
 export const SearchBar = ({
@@ -9,6 +8,9 @@ export const SearchBar = ({
     query: string;
     onSearch: (query: string) => void;
 }) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7327/ingest/d16ae285-20ce-46dd-83c7-6326500aff7f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7ab8a3'},body:JSON.stringify({sessionId:'7ab8a3',runId:'pre-fix',hypothesisId:'H1',location:'components/SearchBar.tsx:12',message:'SearchBar render reached',data:{queryLength:query.length,hasOnSearch:typeof onSearch==='function'},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     return (
         <View style={styles.container}>
             <TextInput
@@ -16,23 +18,17 @@ export const SearchBar = ({
                 placeholder="Search for listings..."
                 placeholderTextColor="#7a7a7a"
                 value={query}
-                onChangeText={onSearch}
+                onChangeText={(text) => {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7327/ingest/d16ae285-20ce-46dd-83c7-6326500aff7f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7ab8a3'},body:JSON.stringify({sessionId:'7ab8a3',runId:'pre-fix',hypothesisId:'H4',location:'components/SearchBar.tsx:24',message:'SearchBar onChangeText fired',data:{nextQueryLength:text.length},timestamp:Date.now()})}).catch(()=>{});
+                    // #endregion
+                    onSearch(text);
+                }}
                 clearButtonMode="while-editing"
                 keyboardAppearance="light"
                 returnKeyType="search"
             />
         </View>
-=======
-import { TextInput } from 'react-native';
-
-export const SearchBar = ({query, onSearch}: {query: string; onSearch: (query: string) => void}) => {
-    return(
-        <TextInput
-            placeholder="Search for listings..."
-            value={query}
-            onChangeText={onSearch}
-        />
->>>>>>> user-ids
     );
 };
 
