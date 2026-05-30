@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ListingCardProps } from './Listing.types';
 
 
@@ -15,7 +15,10 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   email,
   phone,
   version,
-  eventHandler
+  eventHandler,
+  onAuthorPress,
+  onEdit,
+  onDelete
 }) => {
   const [currentVersion, setCurrentVersion] = useState(version ?? 'compact');
 
@@ -31,7 +34,13 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           </View>
         </View>
 
-        <Text style={styles.meta}>By {author}</Text>
+        {onAuthorPress ? (
+          <Pressable onPress={onAuthorPress} hitSlop={6}>
+            <Text style={[styles.meta, styles.authorLink]}>By {author}</Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.meta}>By {author}</Text>
+        )}
 
         <View style={styles.badgeRow}>
           <View style={styles.categoryBadge}>
@@ -55,14 +64,31 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           </View>
         )}
 
-        <TouchableOpacity
-          onPress={() => setCurrentVersion(prev => (prev === 'compact' ? 'description' : 'compact'))}
-          style={styles.toggleButton}
-        >
-          <Text style={styles.toggleText}>
-            {currentVersion === 'compact' ? 'See more...' : 'See less...'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.footerRow}>
+          <TouchableOpacity
+            onPress={() => setCurrentVersion(prev => (prev === 'compact' ? 'description' : 'compact'))}
+            style={styles.toggleButton}
+          >
+            <Text style={styles.toggleText}>
+              {currentVersion === 'compact' ? 'See more...' : 'See less...'}
+            </Text>
+          </TouchableOpacity>
+
+          {(onEdit || onDelete) && (
+            <View style={styles.actionRow}>
+              {onEdit && (
+                <TouchableOpacity onPress={onEdit} style={styles.actionButton}>
+                  <Text style={styles.editText}>Edit</Text>
+                </TouchableOpacity>
+              )}
+              {onDelete && (
+                <TouchableOpacity onPress={onDelete} style={styles.actionButton}>
+                  <Text style={styles.deleteText}>Delete</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -113,6 +139,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 4
   },
+  authorLink: {
+    color: '#0a84ff',
+    fontWeight: '600',
+    textDecorationLine: 'underline'
+  },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -158,14 +189,38 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 6
   },
-  toggleButton: {
+  footerRow: {
     marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  toggleButton: {
     alignSelf: 'flex-start',
     paddingVertical: 4,
     paddingHorizontal: 6
   },
   toggleText: {
     color: '#0a84ff',
+    fontWeight: '600',
+    fontSize: 13
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  actionButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginLeft: 4
+  },
+  editText: {
+    color: '#0a66ff',
+    fontWeight: '600',
+    fontSize: 13
+  },
+  deleteText: {
+    color: '#d32f2f',
     fontWeight: '600',
     fontSize: 13
   }
