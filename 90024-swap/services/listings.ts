@@ -12,9 +12,12 @@ import {
   serverTimestamp,
   updateDoc,
   where,
+  writeBatch,
 } from 'firebase/firestore';
 
 const LISTINGS = 'listings';
+
+export type ListingStatus = 'active' | 'archived';
 
 // The persisted shape of a listing. Mirrors the fields collected by the
 // Add Listing form, plus ownership/identity metadata.
@@ -35,6 +38,7 @@ export type Listing = ListingData & {
   id: string;
   owner: string;
   author: string;
+  status: ListingStatus;
 };
 
 // Pull only the persisted fields off a form/card object so we never write
@@ -67,6 +71,8 @@ function mapDoc(id: string, data: any): Listing {
     email: data.email,
     phone: data.phone,
     imageUrl: data.imageUrl,
+    // Listings created before the archive feature have no status -> treat as active.
+    status: data.status === 'archived' ? 'archived' : 'active',
   };
 }
 
@@ -80,6 +86,7 @@ export async function createListing(
     ...toListingData(data),
     owner,
     author,
+    status: 'active' as ListingStatus,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -108,11 +115,14 @@ export async function getUserListings(uid: string): Promise<Listing[]> {
     .map((d) => mapDoc(d.id, d.data()));
 }
 
-// Every listing, newest first (discovery feed).
+// Active listings only, newest first (discovery feed). Archived listings are
+// filtered out client-side so we don't need a composite index alongside orderBy.
 export async function getAllListings(): Promise<Listing[]> {
   const q = query(collection(db, LISTINGS), orderBy('createdAt', 'desc'));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => mapDoc(d.id, d.data()));
+  return snap.docs
+    .map((d) => mapDoc(d.id, d.data()))
+    .filter((l) => l.status !== 'archived');
 }
 
 // Update an existing listing's editable fields.
@@ -129,4 +139,26 @@ export async function updateListing(
 // Permanently remove a listing.
 export async function deleteListing(id: string): Promise<void> {
   await deleteDoc(doc(db, LISTINGS, id));
+}
+
+// Archive or unarchive a listing (archived ones leave the feed/public profile).
+export async function setListingStatus(
+  id: string,
+  status: ListingStatus,
+): Promise<void> {
+  await updateDoc(doc(db, LISTINGS, id), { status, updatedAt: serverTimestamp() });
+}
+
+// Re-stamp the denormalized author on every listing a user owns. Called when a
+// user changes their display name so "By {author}" stays consistent.
+export async function setAuthorForUserListings(
+  uid: string,
+  author: string,
+): Promise<void> {
+  const q = query(collection(db, LISTINGS), where('owner', '==', uid));
+  const snap = await getDocs(q);
+  if (snap.empty) return;
+  const batch = writeBatch(db);
+  snap.docs.forEach((d) => batch.update(d.ref, { author }));
+  await batch.commit();
 }
