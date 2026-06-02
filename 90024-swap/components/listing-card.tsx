@@ -1,4 +1,5 @@
 
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ListingCardProps } from './Listing.types';
@@ -18,6 +19,20 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   eventHandler
 }) => {
   const [currentVersion, setCurrentVersion] = useState(version ?? 'compact');
+  const router = useRouter();
+
+  function handleCreateAgreement() {
+    router.push({
+      pathname: '/(agreement)/create',
+      params: {
+        listingTitle: title,
+        unit,
+        price: String(price),
+        otherName: author,
+        currentUserRole: 'buyer',
+      },
+    });
+  }
 
   return (
     <TouchableOpacity onPress={eventHandler} style={styles.card} activeOpacity={0.9}>
@@ -52,6 +67,12 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             <Text style={styles.descriptionText}>{description}</Text>
             {email ? <Text style={styles.contact}>Email: {email}</Text> : null}
             {phone ? <Text style={styles.contact}>Phone: {phone}</Text> : null}
+            <TouchableOpacity
+              style={styles.agreementButton}
+              onPress={handleCreateAgreement}
+            >
+              <Text style={styles.agreementButtonText}>Create Agreement</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -167,6 +188,19 @@ const styles = StyleSheet.create({
   toggleText: {
     color: '#0a84ff',
     fontWeight: '600',
+    fontSize: 13
+  },
+  agreementButton: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    backgroundColor: '#2563eb',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10
+  },
+  agreementButtonText: {
+    color: '#fff',
+    fontWeight: '700',
     fontSize: 13
   }
 });

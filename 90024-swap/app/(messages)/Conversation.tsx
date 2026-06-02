@@ -1,24 +1,67 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TouchableOpacity, ScrollView, View, Text } from 'react-native';
 import { UserProfileButton } from '@/components/MessageComponents/UserProfileButton';
 import { ConversationCard } from '@/components/MessageComponents/ConversationCard';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MessageInputBar } from '@/components/MessageComponents/MessageInputBar';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import conversations from '@/testdata/conversations.json'
-import { MessageBubble } from '@/components/MessageComponents/MessageBubble';
+import { MessageBubble, MessageType } from '@/components/MessageComponents/MessageBubble';
+import { subscribeToAgreementMessages } from '@/constants/agreements';
 const current_user = 'user_2' //replace with get user id from profile part
 
+type ChatMessage = {
+    messageId: string;
+    senderId: string;
+    content: string;
+    timestamp: string;
+    type?: MessageType;
+    agreementId?: string;
+};
+
 export default function ConversationView() {
-    const { recipient, title, conversationId} = useLocalSearchParams()
+    const params = useLocalSearchParams<{
+        recipient?: string;
+        title?: string;
+        conversationId?: string;
+        recipientId?: string;
+    }>();
+    const { recipient, title, conversationId } = params;
     const router = useRouter();
     const conversation = conversations[conversationId as keyof typeof conversations]
-    const [messages, setMessages] = useState(conversation.messages ?? [])
+    const [textMessages, setTextMessages] = useState<ChatMessage[]>(
+        (conversation?.messages as ChatMessage[]) ?? []
+    )
+    const [agreementMessages, setAgreementMessages] = useState<ChatMessage[]>([])
     const [draft, setDraft] = useState('')
+
+    useEffect(() => {
+        if (!conversationId) return;
+        const unsub = subscribeToAgreementMessages(
+            conversationId as string,
+            (msgs) => {
+                setAgreementMessages(
+                    msgs.map((m) => ({
+                        messageId: `agreement_${m.id}`,
+                        senderId: m.senderId,
+                        content: 'Sent an agreement',
+                        timestamp: new Date(m.createdAt).toISOString(),
+                        type: 'agreement',
+                        agreementId: m.agreementId,
+                    })),
+                );
+            },
+        );
+        return unsub;
+    }, [conversationId]);
+
+    const messages: ChatMessage[] = [...textMessages, ...agreementMessages].sort(
+        (a, b) => a.timestamp.localeCompare(b.timestamp),
+    );
+
     function handleSend() {
         if(draft === "") return;
-        setMessages([...messages, {
+        setTextMessages([...textMessages, {
             messageId: Date.now().toString(),
             senderId: current_user,
             content: draft,
@@ -26,27 +69,60 @@ export default function ConversationView() {
         }])
         setDraft("")
     }
+
+    function handleStartAgreement() {
+        router.push({
+            pathname: '/(agreement)/create',
+            params: {
+                otherUid: (params.recipientId as string) ?? '',
+                otherName: (recipient as string) ?? '',
+                listingTitle: (title as string) ?? '',
+                currentUserRole: 'provider',
+                conversationId: (conversationId as string) ?? '',
+            },
+        });
+    }
+
     return (
         <View style={{flex:1}}>
-            <View style={{ flexDirection: "row",  backgroundColor:"#2774AE"}}>
+            <View style={{ flexDirection: "row",  backgroundColor:"#2774AE", alignItems: 'center', padding: 8 }}>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/messages')}>
                     <Ionicons name="arrow-back" size={24} color="white"/>
                 </TouchableOpacity>
-                <View style={{ flexDirection: "column", flex: 1}}>
+                <View style={{ flexDirection: "column", flex: 1, marginLeft: 8 }}>
                     <Text style={{color: "white"}}>{recipient}</Text>
                     <Text style={{color: "white"}}>{title}</Text>
                 </View>
+                <TouchableOpacity
+                    onPress={handleStartAgreement}
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: 'white',
+                        borderRadius: 999,
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        gap: 4,
+                    }}
+                >
+                    <Ionicons name="document-text-outline" size={16} color="#2774AE" />
+                    <Text style={{ color: '#2774AE', fontWeight: '700', fontSize: 12 }}>
+                        Agreement
+                    </Text>
+                </TouchableOpacity>
             </View>
-            <ScrollView>
+            <ScrollView contentContainerStyle={{ padding: 8, gap: 6 }}>
             {messages.map((message) => {
                 return (
                     <MessageBubble
                     key={message.messageId}
-                    senderId = {message.senderId}
-                    messageId= {message.messageId}
-                    timestamp= {message.timestamp}
-                    content = {message.content}
-                    ></MessageBubble>
+                    senderId={message.senderId}
+                    messageId={message.messageId}
+                    timestamp={message.timestamp}
+                    content={message.content}
+                    type={message.type}
+                    agreementId={message.agreementId}
+                    />
                 )
             })}
             </ScrollView>
@@ -55,6 +131,6 @@ export default function ConversationView() {
             </View>
         </View>
 
-        
+
     );
 }
