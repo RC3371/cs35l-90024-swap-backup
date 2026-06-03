@@ -1,5 +1,13 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { auth } from '@/constants/firebaseConfig';
+import { authErrorMessage } from '@/lib/authErrors';
+import {
+  validateDisplayName,
+  validateLoginIdentifier,
+  validatePassword,
+  validatePasswordConfirmation,
+  validateUclaEmail,
+  validateUserId,
+} from '@/lib/validation';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,31 +21,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-function firebaseErrorMessage(code: string): string {
-  switch (code) {
-    case 'auth/user-not-found':
-    case 'auth/wrong-password':
-    case 'auth/invalid-credential':
-      return 'Invalid credentials. Check your email/user ID and password.';
-    case 'auth/email-already-in-use':
-      return 'An account with this email already exists.';
-    case 'auth/userid-taken':
-      return 'That user ID is already taken. Please pick another.';
-    case 'auth/weak-password':
-      return 'Password must be at least 6 characters.';
-    case 'auth/invalid-email':
-      return 'Please enter a valid email address.';
-    case 'auth/too-many-requests':
-      return 'Too many attempts. Please try again later.';
-    default:
-      return 'Something went wrong. Please try again.';
-  }
-}
-
-const USER_ID_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
-
 export default function LoginScreen() {
-  const { signIn, signUp, signOut, resendVerification } = useAuth();
+  const { signIn, signUp, signOut, resendVerification, getCurrentUser } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   // in sign-in mode this holds an email OR a user ID; in sign-up mode it must be an email
   const [identifier, setIdentifier] = useState('');
@@ -58,46 +43,20 @@ export default function LoginScreen() {
   };
 
   const validate = () => {
-    const trimmedIdentifier = identifier.trim().toLowerCase();
-    if (!trimmedIdentifier) {
-      setError(isSignUp ? 'Please enter your UCLA email.' : 'Please enter your email or user ID.');
+    const checks: (string | null)[] = isSignUp
+      ? [
+          validateUclaEmail(identifier),
+          validatePassword(password),
+          validateDisplayName(displayName),
+          validateUserId(userId),
+          validatePasswordConfirmation(password, confirmPassword),
+        ]
+      : [validateLoginIdentifier(identifier), validatePassword(password)];
+
+    const firstError = checks.find((c) => c !== null);
+    if (firstError) {
+      setError(firstError);
       return false;
-    }
-    if (isSignUp) {
-      if (!trimmedIdentifier.endsWith('@ucla.edu')) {
-        setError('Please use your UCLA email (must end in @ucla.edu).');
-        return false;
-      }
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(trimmedIdentifier)) {
-        setError('Please enter a valid email address.');
-        return false;
-      }
-    } else if (trimmedIdentifier.includes('@')) {
-      // signing in with an email — still require it to be a valid email shape
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(trimmedIdentifier)) {
-        setError('Please enter a valid email address.');
-        return false;
-      }
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return false;
-    }
-    if (isSignUp) {
-      if (!displayName.trim()) {
-        setError('Please enter your name.');
-        return false;
-      }
-      if (!USER_ID_REGEX.test(userId.trim())) {
-        setError('User ID must be 3-20 characters: letters, numbers, or underscores.');
-        return false;
-      }
-      if (password !== confirmPassword) {
-        setError('Passwords do not match.');
-        return false;
-      }
     }
     return true;
   };
@@ -124,14 +83,15 @@ export default function LoginScreen() {
       } else {
         await signIn(identifier.trim().toLowerCase(), password);
         // signIn succeeded — check verification status; bounce back out if not verified
-        if (auth.currentUser && !auth.currentUser.emailVerified) {
+        const current = getCurrentUser();
+        if (current && !current.emailVerified) {
           await signOut();
           setError('Please verify your email before signing in.');
           setShowResend(true);
         }
       }
     } catch (e: any) {
-      setError(firebaseErrorMessage(e.code));
+      setError(authErrorMessage(e?.code));
     } finally {
       setLoading(false);
     }
@@ -144,7 +104,7 @@ export default function LoginScreen() {
       await resendVerification(identifier.trim().toLowerCase(), password);
       setInfo('Verification email sent. Check your inbox.');
     } catch (e: any) {
-      setError(firebaseErrorMessage(e.code));
+      setError(authErrorMessage(e?.code));
     } finally {
       setLoading(false);
     }
