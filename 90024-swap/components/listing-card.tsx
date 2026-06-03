@@ -1,6 +1,7 @@
 
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ListingCardProps } from './Listing.types';
 
 
@@ -14,8 +15,16 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   description,
   email,
   phone,
+  status,
   version,
-  eventHandler
+  eventHandler,
+  onAuthorPress,
+  onEdit,
+  onDelete,
+  onArchive,
+  onUnarchive,
+  isSaved,
+  onToggleSave
 }) => {
   const [currentVersion, setCurrentVersion] = useState(version ?? 'compact');
 
@@ -25,18 +34,40 @@ export const ListingCard: React.FC<ListingCardProps> = ({
       <View style={styles.content}>
         <View style={styles.headerRow}>
           <Text style={styles.title} numberOfLines={1}>{title}</Text>
-          <View style={styles.priceWrap}>
-            <Text style={styles.price}>${price?.toFixed?.(2) ?? '-'}</Text>
-            <Text style={styles.unit}>/{unit}</Text>
+          <View style={styles.headerRight}>
+            <View style={styles.priceWrap}>
+              <Text style={styles.price}>${price?.toFixed?.(2) ?? '-'}</Text>
+              <Text style={styles.unit}>/{unit}</Text>
+            </View>
+            {onToggleSave && (
+              <TouchableOpacity onPress={onToggleSave} hitSlop={8} style={styles.bookmarkButton}>
+                <Ionicons
+                  name={isSaved ? 'bookmark' : 'bookmark-outline'}
+                  size={20}
+                  color={isSaved ? '#2563eb' : '#9ca3af'}
+                />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
-        <Text style={styles.meta}>By {author}</Text>
+        {onAuthorPress ? (
+          <Pressable onPress={onAuthorPress} hitSlop={6}>
+            <Text style={[styles.meta, styles.authorLink]}>By {author}</Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.meta}>By {author}</Text>
+        )}
 
         <View style={styles.badgeRow}>
           <View style={styles.categoryBadge}>
             <Text style={styles.categoryText}>{category}</Text>
           </View>
+          {status === 'archived' && (
+            <View style={styles.archivedBadge}>
+              <Text style={styles.archivedText}>Archived</Text>
+            </View>
+          )}
           <View style={styles.topicRow}>
             {topic?.map((t, i) => (
               <View key={i} style={styles.topicPill}>
@@ -55,14 +86,41 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           </View>
         )}
 
-        <TouchableOpacity
-          onPress={() => setCurrentVersion(prev => (prev === 'compact' ? 'description' : 'compact'))}
-          style={styles.toggleButton}
-        >
-          <Text style={styles.toggleText}>
-            {currentVersion === 'compact' ? 'See more...' : 'See less...'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.footerRow}>
+          <TouchableOpacity
+            onPress={() => setCurrentVersion(prev => (prev === 'compact' ? 'description' : 'compact'))}
+            style={styles.toggleButton}
+          >
+            <Text style={styles.toggleText}>
+              {currentVersion === 'compact' ? 'See more...' : 'See less...'}
+            </Text>
+          </TouchableOpacity>
+
+          {(onEdit || onArchive || onUnarchive || onDelete) && (
+            <View style={styles.actionRow}>
+              {onEdit && (
+                <TouchableOpacity onPress={onEdit} style={styles.actionButton}>
+                  <Text style={styles.editText}>Edit</Text>
+                </TouchableOpacity>
+              )}
+              {onArchive && (
+                <TouchableOpacity onPress={onArchive} style={styles.actionButton}>
+                  <Text style={styles.archiveText}>Archive</Text>
+                </TouchableOpacity>
+              )}
+              {onUnarchive && (
+                <TouchableOpacity onPress={onUnarchive} style={styles.actionButton}>
+                  <Text style={styles.archiveText}>Unarchive</Text>
+                </TouchableOpacity>
+              )}
+              {onDelete && (
+                <TouchableOpacity onPress={onDelete} style={styles.actionButton}>
+                  <Text style={styles.deleteText}>Delete</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -94,9 +152,16 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     marginRight: 8
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
   priceWrap: {
     flexDirection: 'row',
     alignItems: 'baseline'
+  },
+  bookmarkButton: {
+    marginLeft: 8
   },
   price: {
     color: '#0a84ff',
@@ -113,6 +178,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 4
   },
+  authorLink: {
+    color: '#0a84ff',
+    fontWeight: '600',
+    textDecorationLine: 'underline'
+  },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -127,6 +197,18 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     color: '#0a66ff',
+    fontSize: 12,
+    fontWeight: '600'
+  },
+  archivedBadge: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8
+  },
+  archivedText: {
+    color: '#6b7280',
     fontSize: 12,
     fontWeight: '600'
   },
@@ -158,14 +240,43 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 6
   },
-  toggleButton: {
+  footerRow: {
     marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  toggleButton: {
     alignSelf: 'flex-start',
     paddingVertical: 4,
     paddingHorizontal: 6
   },
   toggleText: {
     color: '#0a84ff',
+    fontWeight: '600',
+    fontSize: 13
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  actionButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginLeft: 4
+  },
+  editText: {
+    color: '#0a66ff',
+    fontWeight: '600',
+    fontSize: 13
+  },
+  archiveText: {
+    color: '#b45309',
+    fontWeight: '600',
+    fontSize: 13
+  },
+  deleteText: {
+    color: '#d32f2f',
     fontWeight: '600',
     fontSize: 13
   }

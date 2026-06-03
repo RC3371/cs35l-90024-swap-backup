@@ -1,5 +1,9 @@
+import { useAuth } from '@/contexts/AuthContext';
+import { createListing, getListing, updateListing } from '@/services/listings';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import {
+    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -12,22 +16,65 @@ import {
 import { Categories, ListingCardProps, Topics } from '../../components/Listing.types';
 
 export default function AddListing() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { listingId } = useLocalSearchParams<{ listingId?: string }>();
+  const isEdit = !!listingId;
+
   const [newListing, setNewListing] = React.useState<ListingCardProps>({
     title: '',
     author: '',
     price: 0,
     unit: '',
-    topic: [], 
+    topic: [],
     category: Categories.Skills,
     version: 'compact',
-    description: '', 
-    email: '', 
+    description: '',
+    email: '',
     phone: ''
   });
 
   const [focusedField, setFocusedField] = React.useState<string>('');
   const [topicDropdownOpen, setTopicDropdownOpen] = React.useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  // In edit mode, load the existing listing and prefill the form. In create
+  // mode (no listingId) reset to a blank form — the tab stays mounted, so
+  // without this it would keep stale data from a previous edit.
+  React.useEffect(() => {
+    if (!listingId) {
+      setNewListing({
+        title: '',
+        author: '',
+        price: 0,
+        unit: '',
+        topic: [],
+        category: Categories.Skills,
+        version: 'compact',
+        description: '',
+        email: '',
+        phone: ''
+      });
+      return;
+    }
+    let active = true;
+    (async () => {
+      const listing = await getListing(listingId);
+      if (active && listing) {
+        setNewListing({
+          ...listing,
+          version: 'compact',
+          description: listing.description ?? '',
+          email: listing.email ?? '',
+          phone: listing.phone ?? '',
+        });
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [listingId]);
 
   const topics = Object.values(Topics) as Topics[];
   const categories = Object.values(Categories) as Categories[];
@@ -59,12 +106,34 @@ export default function AddListing() {
     setCategoryDropdownOpen(false);
   }
 
-  function addToDatabase(newListing: ListingCardProps) {
-    console.log('New listing created:', newListing);
+  async function handleSubmit() {
+    if (!newListing.title.trim()) {
+      Alert.alert('Missing title', 'Please give your listing a title.');
+      return;
+    }
+    if (!user) {
+      Alert.alert('Not signed in', 'You must be signed in to post a listing.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      if (isEdit && listingId) {
+        await updateListing(listingId, newListing);
+      } else {
+        await createListing(newListing, user.uid, user.displayName ?? 'Anonymous');
+      }
+      router.back();
+    } catch (err) {
+      console.error('Failed to save listing', err);
+      Alert.alert('Error', 'Could not save your listing. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleClose() {
-    console.log('Close listing form');
+    router.back();
   }
 
   const renderLabel = (label: string) => (
@@ -82,7 +151,7 @@ export default function AddListing() {
       <View style={styles.screen}>
         {/* Header Section */}
         <View style={styles.header}>
-          <Text style={styles.title}>Create Listing</Text>
+          <Text style={styles.title}>{isEdit ? 'Edit Listing' : 'Create Listing'}</Text>
           <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
             <Text style={styles.closeText}>×</Text>
           </TouchableOpacity>
@@ -103,23 +172,6 @@ export default function AddListing() {
               value={newListing.title}
               onChangeText={(text) => handleInputChange('title', text)}
               onFocus={() => setFocusedField('title')}
-              onBlur={() => setFocusedField('')}
-            />
-          </View>
-
-          {/* Author Name */}
-          <View style={styles.fieldGroup}>
-            {renderLabel('Your Name')}
-            <TextInput
-              style={[
-                styles.input,
-                focusedField === 'author' && styles.inputFocus
-              ]}
-              placeholder="Bruin Bear"
-              placeholderTextColor="#999"
-              value={newListing.author}
-              onChangeText={(text) => handleInputChange('author', text)}
-              onFocus={() => setFocusedField('author')}
               onBlur={() => setFocusedField('')}
             />
           </View>
@@ -318,10 +370,13 @@ export default function AddListing() {
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, styles.primaryAction]}
-            onPress={() => addToDatabase(newListing)}
+            style={[styles.actionButton, styles.primaryAction, submitting && styles.disabledAction]}
+            onPress={handleSubmit}
+            disabled={submitting}
           >
-            <Text style={styles.primaryText}>Post Listing</Text>
+            <Text style={styles.primaryText}>
+              {submitting ? 'Saving...' : isEdit ? 'Save Changes' : 'Post Listing'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -484,6 +539,9 @@ const styles = StyleSheet.create({
   },
   primaryAction: {
     backgroundColor: '#2563eb'
+  },
+  disabledAction: {
+    opacity: 0.6
   },
   cancelText: {
     color: '#334155',
