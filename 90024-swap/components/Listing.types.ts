@@ -40,6 +40,7 @@ export interface ListingCardProps {
 
     // Optional interactions layered on top of the base card
     onAuthorPress?: () => void; // makes the "By {author}" line tappable (feed -> provider profile)
+    onMessage?: () => void;     // when set, renders a "Message" button under the price (start a chat with the seller)
     onEdit?: () => void;        // when set, renders an Edit action (owner viewing own listing)
     onDelete?: () => void;      // when set, renders a Delete action (owner viewing own listing)
     onArchive?: () => void;     // when set, renders an Archive action (owner, active listing)

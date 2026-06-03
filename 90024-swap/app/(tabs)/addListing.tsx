@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { createListing, getListing, updateListing } from '@/services/listings';
+import { getUserProfile } from '@/services/users';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import {
@@ -30,8 +31,6 @@ export default function AddListing() {
     category: Categories.Skills,
     version: 'compact',
     description: '',
-    email: '',
-    phone: ''
   });
 
   const [focusedField, setFocusedField] = React.useState<string>('');
@@ -53,8 +52,6 @@ export default function AddListing() {
         category: Categories.Skills,
         version: 'compact',
         description: '',
-        email: '',
-        phone: ''
       });
       return;
     }
@@ -66,8 +63,6 @@ export default function AddListing() {
           ...listing,
           version: 'compact',
           description: listing.description ?? '',
-          email: listing.email ?? '',
-          phone: listing.phone ?? '',
         });
       }
     })();
@@ -118,10 +113,22 @@ export default function AddListing() {
 
     setSubmitting(true);
     try {
+      // Contact info is sourced from the poster's profile, not entered per-listing.
+      const profile = await getUserProfile(user.uid);
+      const phoneDisplay =
+        profile?.phoneCountryCode && profile?.phoneNumber
+          ? `${profile.phoneCountryCode} ${profile.phoneNumber}`
+          : profile?.phone ?? '';
+      const withContact = {
+        ...newListing,
+        email: profile?.email ?? user.email ?? '',
+        phone: phoneDisplay,
+      };
+
       if (isEdit && listingId) {
-        await updateListing(listingId, newListing);
+        await updateListing(listingId, withContact);
       } else {
-        await createListing(newListing, user.uid, user.displayName ?? 'Anonymous');
+        await createListing(withContact, user.uid, user.displayName ?? 'Anonymous');
       }
       router.back();
     } catch (err) {
@@ -326,41 +333,7 @@ export default function AddListing() {
             />
           </View>
 
-          {/* Email Contact */}
-          <View style={styles.fieldGroup}>
-            {renderLabel('Email')}
-            <TextInput
-              style={[
-                styles.input,
-                focusedField === 'email' && styles.inputFocus
-              ]}
-              placeholder="yourname@g.ucla.edu"
-              placeholderTextColor="#999"
-              keyboardType="email-address"
-              value={newListing.email}
-              onChangeText={text => handleInputChange('email', text)}
-              onFocus={() => setFocusedField('email')}
-              onBlur={() => setFocusedField('')}
-            />
-          </View>
-
-          {/* Phone Contact */}
-          <View style={styles.fieldGroup}>
-            {renderLabel('Phone')}
-            <TextInput
-              style={[
-                styles.input,
-                focusedField === 'phone' && styles.inputFocus
-              ]}
-              placeholder="310-825-4321"
-              placeholderTextColor="#999"
-              keyboardType="phone-pad"
-              value={newListing.phone}
-              onChangeText={text => handleInputChange('phone', text)}
-              onFocus={() => setFocusedField('phone')}
-              onBlur={() => setFocusedField('')}
-            />
-          </View>
+          {/* Contact info (email & phone) is taken from your profile automatically. */}
 
         </ScrollView>
 

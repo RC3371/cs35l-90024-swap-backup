@@ -110,6 +110,19 @@ export default function Feed() {
                                 ? () => router.push(`/provider/${listing.owner}`)
                                 : undefined
                         }
+                        onMessage={
+                            listing.owner && listing.owner !== viewerUid
+                                ? () =>
+                                      router.push({
+                                          pathname: '/(messages)/Conversation',
+                                          params: {
+                                              recipient: listing.author,
+                                              title: listing.title,
+                                              conversationId: `new_${listing.owner}`,
+                                          },
+                                      })
+                                : undefined
+                        }
                         isSaved={listing.id ? savedIds.has(listing.id) : false}
                         onToggleSave={
                             viewerUid && listing.owner !== viewerUid
