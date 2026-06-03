@@ -19,6 +19,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   version,
   eventHandler,
   onAuthorPress,
+  onMessage,
   onEdit,
   onDelete,
   onArchive,
@@ -35,17 +36,25 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         <View style={styles.headerRow}>
           <Text style={styles.title} numberOfLines={1}>{title}</Text>
           <View style={styles.headerRight}>
-            <View style={styles.priceWrap}>
-              <Text style={styles.price}>${price?.toFixed?.(2) ?? '-'}</Text>
-              <Text style={styles.unit}>/{unit}</Text>
+            <View style={styles.priceTopRow}>
+              <View style={styles.priceWrap}>
+                <Text style={styles.price}>${price?.toFixed?.(2) ?? '-'}</Text>
+                <Text style={styles.unit}>/{unit}</Text>
+              </View>
+              {onToggleSave && (
+                <TouchableOpacity onPress={onToggleSave} hitSlop={8} style={styles.bookmarkButton}>
+                  <Ionicons
+                    name={isSaved ? 'bookmark' : 'bookmark-outline'}
+                    size={20}
+                    color={isSaved ? '#2563eb' : '#9ca3af'}
+                  />
+                </TouchableOpacity>
+              )}
             </View>
-            {onToggleSave && (
-              <TouchableOpacity onPress={onToggleSave} hitSlop={8} style={styles.bookmarkButton}>
-                <Ionicons
-                  name={isSaved ? 'bookmark' : 'bookmark-outline'}
-                  size={20}
-                  color={isSaved ? '#2563eb' : '#9ca3af'}
-                />
+            {onMessage && (
+              <TouchableOpacity onPress={onMessage} style={styles.messageButton} hitSlop={6}>
+                <Ionicons name="chatbubble-outline" size={13} color="#fff" />
+                <Text style={styles.messageButtonText}>Message</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -77,14 +86,16 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           </View>
         </View>
 
-        {/* Description is completely hidden in compact mode */}
-        {currentVersion !== 'compact' && (
-          <View style={styles.descriptionWrap}>
-            <Text style={styles.descriptionText}>{description}</Text>
-            {email ? <Text style={styles.contact}>Email: {email}</Text> : null}
-            {phone ? <Text style={styles.contact}>Phone: {phone}</Text> : null}
-          </View>
-        )}
+        {/* Description is always shown; contact details reveal on "See more". */}
+        <View style={styles.descriptionWrap}>
+          {description ? <Text style={styles.descriptionText}>{description}</Text> : null}
+          {currentVersion !== 'compact' && (
+            <>
+              {email ? <Text style={styles.contact}>Email: {email}</Text> : null}
+              {phone ? <Text style={styles.contact}>Phone: {phone}</Text> : null}
+            </>
+          )}
+        </View>
 
         <View style={styles.footerRow}>
           <TouchableOpacity
@@ -153,6 +164,9 @@ const styles = StyleSheet.create({
     marginRight: 8
   },
   headerRight: {
+    alignItems: 'flex-end'
+  },
+  priceTopRow: {
     flexDirection: 'row',
     alignItems: 'center'
   },
@@ -162,6 +176,21 @@ const styles = StyleSheet.create({
   },
   bookmarkButton: {
     marginLeft: 8
+  },
+  messageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginTop: 6
+  },
+  messageButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 12,
+    marginLeft: 4
   },
   price: {
     color: '#0a84ff',

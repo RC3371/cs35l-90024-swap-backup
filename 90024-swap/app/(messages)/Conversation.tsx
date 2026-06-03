@@ -14,7 +14,9 @@ export default function ConversationView() {
     const { recipient, title, conversationId} = useLocalSearchParams()
     const router = useRouter();
     const conversation = conversations[conversationId as keyof typeof conversations]
-    const [messages, setMessages] = useState(conversation.messages ?? [])
+    // New conversations (started from a listing) have no entry in the test data yet,
+    // so fall back to an empty thread instead of crashing.
+    const [messages, setMessages] = useState(conversation?.messages ?? [])
     const [draft, setDraft] = useState('')
     function handleSend() {
         if(draft === "") return;
