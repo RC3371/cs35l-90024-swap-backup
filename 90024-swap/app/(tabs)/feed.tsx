@@ -11,8 +11,8 @@ import { Categories } from '../../components/Listing.types';
 import { PillFilterCarousel, PillOption } from '../../components/PillFilterCarousel';
 import { SearchBar } from '../../components/SearchBar';
 import { SegmentedControl } from '../../components/SegmentedControl';
-import { addDoc, collection, getDocs, query, where } from '@firebase/firestore';
-import { db } from '@/constants/firebaseConfig';
+//import { addDoc, collection, getDocs, query, where } from '@firebase/firestore';
+//import { db } from '@/constants/firebaseConfig';
 
 export default function Feed() {
 

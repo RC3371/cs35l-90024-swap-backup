@@ -43,3 +43,7 @@ app-example
 /ios
 /android
 
+# other
+notes.pdf
+.claude
+.codex
