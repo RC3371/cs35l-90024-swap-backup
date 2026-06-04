@@ -38,6 +38,24 @@ export function validateDisplayName(displayName: string): string | null {
   return null;
 }
 
+export function validateFirstName(firstName: string): string | null {
+  if (!firstName.trim()) return 'Please enter your first name.';
+  return null;
+}
+
+export function validateLastName(lastName: string): string | null {
+  if (!lastName.trim()) return 'Please enter your last name.';
+  return null;
+}
+
+// Phone is stored as exactly 10 digits (US format); the country code is kept
+// separately. Mirrors the format check used on the profile screen.
+export function validatePhoneNumber(phoneNumber: string): string | null {
+  const digits = phoneNumber.replace(/\D/g, '');
+  if (digits.length !== 10) return 'Please enter a 10-digit phone number.';
+  return null;
+}
+
 export function validateUserId(userId: string): string | null {
   if (!USER_ID_REGEX.test(userId.trim())) {
     return 'User ID must be 3-20 characters: letters, numbers, or underscores.';

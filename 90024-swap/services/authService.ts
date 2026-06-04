@@ -20,6 +20,7 @@ export type AuthErrorCode =
   | 'auth/weak-password'
   | 'auth/invalid-email'
   | 'auth/too-many-requests'
+  | 'auth/permission-denied'
   | 'auth/unknown';
 
 export type AuthError = { code: AuthErrorCode };
@@ -31,6 +32,10 @@ export interface AuthService {
     password: string,
     displayName: string,
     userId: string,
+    phoneCountryCode: string,
+    phoneNumber: string,
+    firstName?: string,
+    lastName?: string,
   ): Promise<void>;
   signOut(): Promise<void>;
   resendVerification(identifier: string, password: string): Promise<void>;
