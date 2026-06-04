@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ListingCardProps } from './Listing.types';
 
@@ -25,6 +25,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   phone,
   status,
   owner,
+  version,
   eventHandler,
   onAuthorPress,
   onMessage,
@@ -37,6 +38,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   onToggleSave,
   viewerUid
 }) => {
+  const [currentVersion, setCurrentVersion] = useState(version ?? 'compact');
   const router = useRouter();
 
   function handleCreateAgreement() {
@@ -105,14 +107,18 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           </View>
         </View>
 
-        {/* All listing details are shown automatically. */}
+        {/* Description is always shown; contact details + actions reveal on "See more". */}
         <View style={styles.descriptionWrap}>
           {description ? <Text style={styles.descriptionText}>{description}</Text> : null}
-          {email ? <Text style={styles.contact}>Email: {email.toLowerCase()}</Text> : null}
-          {phone ? <Text style={styles.contact}>Phone: {formatPhone(phone)}</Text> : null}
+          {currentVersion !== 'compact' && (
+            <>
+              {email ? <Text style={styles.contact}>Email: {email.toLowerCase()}</Text> : null}
+              {phone ? <Text style={styles.contact}>Phone: {formatPhone(phone)}</Text> : null}
+            </>
+          )}
         </View>
 
-        {(onMessage || (owner && owner !== viewerUid)) && (
+        {currentVersion !== 'compact' && (onMessage || (owner && owner !== viewerUid)) && (
           <View style={styles.cardActionsRow}>
             {onMessage && (
               <TouchableOpacity onPress={onMessage} style={styles.messageButton} hitSlop={6}>
@@ -130,6 +136,15 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             ) : null}
           </View>
         )}
+
+        <TouchableOpacity
+          onPress={() => setCurrentVersion(prev => (prev === 'compact' ? 'description' : 'compact'))}
+          style={styles.toggleButton}
+        >
+          <Text style={styles.toggleText}>
+            {currentVersion === 'compact' ? 'See more...' : 'See less...'}
+          </Text>
+        </TouchableOpacity>
 
         {(onEdit || onArchive || onUnarchive || onPublish || onDelete) && (
           <View style={styles.footerRow}>
@@ -303,6 +318,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
     gap: 8
+  },
+  toggleButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    marginTop: 6
+  },
+  toggleText: {
+    color: '#0a84ff',
+    fontWeight: '600',
+    fontSize: 13
   },
   footerRow: {
     marginTop: 8,
