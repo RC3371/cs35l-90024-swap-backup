@@ -5,9 +5,9 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 interface ConversationCardProps {
     profilePictureUrl?: string;
     recipient: string;
-    recipientId?: string;
+    recipientId: string;
     title: string;
-    conversationId?: string;
+    conversationId: string;
     lastMessageAt: string;
     lastMessageContent: string;
     eventHandler: () => void;
@@ -39,9 +39,9 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
         return `${yearsDifference}y ago`;
     };
 
-    return (
-    <TouchableOpacity onPress={eventHandler} style={styles.card}>
-        <View style={styles.row}>
+	    return (
+    <TouchableOpacity onPress={eventHandler} style={styles.cardBackground}>
+        <View style={styles.cardView}>
             <View style={styles.profilePictureBackground}>
                 {profilePictureUrl ? (
                   <Image source={{ uri: profilePictureUrl }} style={styles.profilePicture} />
@@ -49,13 +49,17 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
                   <Ionicons name="person" size={24} color="white" />
                 )}
             </View>
-            <View style={styles.content}>
-                <Text>{recipient}</Text>
-                <Text>{title}</Text>
-                <Text>{lastMessageContent}</Text>
-            </View>
-            <View>
-                <Text>{timeAgo()}</Text>
+            <View style={styles.conversationInfoView}>
+                <View style={styles.topRowInfo}>
+                    <View style={{flexDirection:"row", gap: 10, flexShrink: 1, maxWidth: "70%", overflow: "hidden"}}>
+                        <Text style={styles.recipientText} numberOfLines={1}>{recipient}</Text>
+                        <Text>{"·"}</Text>
+                        <Text style={styles.titleText}>{title}</Text>
+                    </View>
+                    <Text>{timeAgo()}</Text>
+                </View>
+
+                <Text style={styles.lastMessageContent}>{lastMessageContent}</Text>
             </View>
         </View>
     </TouchableOpacity>
@@ -63,31 +67,56 @@ export const ConversationCard: React.FC<ConversationCardProps> = ({
 };
 
 const styles = StyleSheet.create({
-    card: {
-        padding: 10,
-        borderWidth: 1,
+    cardBackground: {
+        padding: 16,
         borderRadius: 10,
+        backgroundColor: "white"
     },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    topRowInfo: {
+        flexDirection: "row",
+        justifyContent: "space-between"
     },
-    content: {
-        flex: 1,
-        flexDirection: 'column',
-        marginHorizontal: 10,
+    conversationInfoView: {
+        flex:1,
+        height:60,
+        flexDirection: "column",
+        justifyContent: "flex-start",
+        marginLeft: 12,
+        gap:4,
+        paddingVertical: 8,
+    },
+    recipientText: {
+        fontSize: 16,
+        fontWeight: "bold"
+    },
+    titleText: {
+        fontSize: 16
+    },
+    lastMessageContent: {
+        fontSize:14,
+        color:"#707070",
+    },
+    timeView: {
+        marginLeft: "auto",
+        alignSelf: "flex-start"
+    },
+    cardView: {
+        flexDirection:'row', 
+        justifyContent: "space-between",
+        alignItems: "center",
+        height: 72
     },
     profilePictureBackground: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
         backgroundColor: 'grey',
         alignItems: 'center',
         justifyContent: 'center',
     },
     profilePicture: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
     },
 });
