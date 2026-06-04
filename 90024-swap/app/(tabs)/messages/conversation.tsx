@@ -58,7 +58,7 @@ export default function ConversationView() {
           headerTitle: () => (
             <View style={{ alignItems: 'center' }}>
               <Text style={styles.headerTitle}>{recipient}</Text>
-              <Text style={styles.headerSubtitle}>{title}</Text>
+              <Text style={styles.headerTitle}>{title}</Text>
             </View>
           ),
           headerLeft: () => (
@@ -96,10 +96,9 @@ export default function ConversationView() {
 
 const styles = StyleSheet.create({
   headerTitle: {
-    fontSize: 16,
-  },
-  headerSubtitle: {
-    fontSize: 12,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000',
   },
   messages: {
     padding: 8,
