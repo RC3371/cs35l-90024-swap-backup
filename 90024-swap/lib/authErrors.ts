@@ -16,6 +16,8 @@ export function authErrorMessage(code: AuthErrorCode | string | undefined): stri
       return 'Please enter a valid email address.';
     case 'auth/too-many-requests':
       return 'Too many attempts. Please try again later.';
+    case 'auth/permission-denied':
+      return "Couldn't reach the database (permissions). Please try again or contact support.";
     default:
       return 'Something went wrong. Please try again.';
   }

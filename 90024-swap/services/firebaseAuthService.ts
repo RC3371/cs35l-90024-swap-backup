@@ -35,10 +35,25 @@ const KNOWN_CODES: ReadonlySet<AuthErrorCode> = new Set<AuthErrorCode>([
   'auth/too-many-requests',
 ]);
 
+// Firestore throws bare codes like `permission-denied` / `unavailable` (no
+// `auth/` prefix). Map those onto our auth vocabulary so callers get a
+// meaningful message instead of the catch-all "Something went wrong".
+const FIRESTORE_CODE_MAP: Readonly<Record<string, AuthErrorCode>> = {
+  'permission-denied': 'auth/permission-denied',
+  unavailable: 'auth/permission-denied',
+};
+
 function rethrow(e: unknown): never {
   const code = (e as { code?: string })?.code;
-  const normalized: AuthErrorCode =
-    code && KNOWN_CODES.has(code as AuthErrorCode) ? (code as AuthErrorCode) : 'auth/unknown';
+  // Surface the real underlying error so the true cause is visible in logs
+  // (the normalized code below intentionally hides backend specifics from the UI).
+  console.warn('[auth] underlying error:', code, (e as { message?: string })?.message);
+  let normalized: AuthErrorCode = 'auth/unknown';
+  if (code && KNOWN_CODES.has(code as AuthErrorCode)) {
+    normalized = code as AuthErrorCode;
+  } else if (code && FIRESTORE_CODE_MAP[code]) {
+    normalized = FIRESTORE_CODE_MAP[code];
+  }
   const err: AuthError = { code: normalized };
   throw err;
 }
@@ -64,7 +79,16 @@ export const firebaseAuthService: AuthService = {
     }
   },
 
-  async signUp(email, password, displayName, userId) {
+  async signUp(
+    email,
+    password,
+    displayName,
+    userId,
+    phoneCountryCode,
+    phoneNumber,
+    firstName,
+    lastName,
+  ) {
     try {
       const userIdKey = userId.trim().toLowerCase();
       const userIdRef = doc(db, 'userIds', userIdKey);
@@ -86,6 +110,11 @@ export const firebaseAuthService: AuthService = {
         userId: userId.trim(),
         email,
         displayName,
+        ...(firstName ? { firstName: firstName.trim() } : {}),
+        ...(lastName ? { lastName: lastName.trim() } : {}),
+        phoneCountryCode,
+        phoneNumber,
+        phone: `${phoneCountryCode} ${phoneNumber}`,
       });
 
       await sendEmailVerification(cred.user);

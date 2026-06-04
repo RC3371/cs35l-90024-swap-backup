@@ -1,10 +1,12 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { authErrorMessage } from '@/lib/authErrors';
 import {
-  validateDisplayName,
+  validateFirstName,
+  validateLastName,
   validateLoginIdentifier,
   validatePassword,
   validatePasswordConfirmation,
+  validatePhoneNumber,
   validateUclaEmail,
   validateUserId,
 } from '@/lib/validation';
@@ -17,8 +19,11 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
+
+const COUNTRY_CODES = ['+1', '+44', '+91', '+61', '+86', '+81', '+49', '+33', '+52', '+55'];
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
@@ -28,8 +33,12 @@ export default function LoginScreen() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [userId, setUserId] = useState('');
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+1');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [codeOpen, setCodeOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -45,10 +54,12 @@ export default function LoginScreen() {
   const validate = () => {
     const checks: (string | null)[] = isSignUp
       ? [
-          validateUclaEmail(identifier),
-          validatePassword(password),
-          validateDisplayName(displayName),
+          validateFirstName(firstName),
+          validateLastName(lastName),
           validateUserId(userId),
+          validateUclaEmail(identifier),
+          validatePhoneNumber(phoneNumber),
+          validatePassword(password),
           validatePasswordConfirmation(password, confirmPassword),
         ]
       : [validateLoginIdentifier(identifier), validatePassword(password)];
@@ -67,18 +78,28 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       if (isSignUp) {
+        const trimmedFirst = firstName.trim();
+        const trimmedLast = lastName.trim();
         await signUp(
           identifier.trim().toLowerCase(),
           password,
-          displayName.trim(),
+          `${trimmedFirst} ${trimmedLast}`,
           userId.trim(),
+          phoneCountryCode,
+          phoneNumber,
+          trimmedFirst,
+          trimmedLast,
         );
         // signUp signs the user out; bring them back to the sign-in form with a message
         setIsSignUp(false);
         setPassword('');
         setConfirmPassword('');
-        setDisplayName('');
+        setFirstName('');
+        setLastName('');
         setUserId('');
+        setPhoneNumber('');
+        setPhoneCountryCode('+1');
+        setCodeOpen(false);
         setInfo('Account created! Check your email for a verification link, then sign in.');
       } else {
         await signIn(identifier.trim().toLowerCase(), password);
@@ -124,16 +145,29 @@ export default function LoginScreen() {
 
           {isSignUp && (
             <>
-              <View style={styles.field}>
-                <Text style={styles.label}>Name</Text>
-                <TextInput
-                  style={styles.input}
-                  autoCapitalize="words"
-                  value={displayName}
-                  onChangeText={setDisplayName}
-                  placeholder="Bruin Bear"
-                  placeholderTextColor="#AAA"
-                />
+              <View style={styles.nameRow}>
+                <View style={[styles.field, styles.nameField]}>
+                  <Text style={styles.label}>First Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    autoCapitalize="words"
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    placeholder="Bruin"
+                    placeholderTextColor="#AAA"
+                  />
+                </View>
+                <View style={[styles.field, styles.nameField]}>
+                  <Text style={styles.label}>Last Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    autoCapitalize="words"
+                    value={lastName}
+                    onChangeText={setLastName}
+                    placeholder="Bear"
+                    placeholderTextColor="#AAA"
+                  />
+                </View>
               </View>
               <View style={styles.field}>
                 <Text style={styles.label}>User ID</Text>
@@ -164,6 +198,46 @@ export default function LoginScreen() {
               placeholderTextColor="#AAA"
             />
           </View>
+
+          {isSignUp && (
+            <View style={styles.field}>
+              <Text style={styles.label}>Phone</Text>
+              <View style={styles.phoneRow}>
+                <TouchableOpacity
+                  style={styles.codeBox}
+                  onPress={() => setCodeOpen((o) => !o)}
+                >
+                  <Text style={styles.codeText}>{phoneCountryCode}</Text>
+                  <Text style={styles.chevron}>{codeOpen ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.phoneInput}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={phoneNumber}
+                  onChangeText={(t) => setPhoneNumber(t.replace(/\D/g, ''))}
+                  placeholder="3108254321"
+                  placeholderTextColor="#AAA"
+                />
+              </View>
+              {codeOpen && (
+                <View style={styles.codeDropdown}>
+                  {COUNTRY_CODES.map((c) => (
+                    <TouchableOpacity
+                      key={c}
+                      style={styles.codeItem}
+                      onPress={() => {
+                        setPhoneCountryCode(c);
+                        setCodeOpen(false);
+                      }}
+                    >
+                      <Text style={styles.codeItemText}>{c}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
 
           <View style={styles.field}>
             <Text style={styles.label}>Password</Text>
@@ -251,6 +325,44 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   field: { marginBottom: 16 },
+  nameRow: { flexDirection: 'row', gap: 12 },
+  nameField: { flex: 1 },
+  phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  codeBox: {
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E2E2E2',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  codeText: { color: '#1A1A1A', fontWeight: '600', fontSize: 16, marginRight: 6 },
+  chevron: { color: '#666', fontSize: 12 },
+  phoneInput: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E2E2E2',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#1A1A1A',
+  },
+  codeDropdown: {
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: '#E2E2E2',
+    borderRadius: 12,
+    backgroundColor: '#FFF',
+    overflow: 'hidden',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  codeItem: { paddingVertical: 10, paddingHorizontal: 16 },
+  codeItemText: { color: '#1A1A1A', fontWeight: '600' },
   label: {
     fontSize: 12,
     fontWeight: '700',
