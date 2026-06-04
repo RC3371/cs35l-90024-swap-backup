@@ -1,57 +1,102 @@
-import React from 'react';
-import { ScrollView, View, Text } from 'react-native';
-import { UserProfileButton } from '@/components/MessageComponents/UserProfileButton';
 import { ConversationCard } from '@/components/MessageComponents/ConversationCard';
+import { useAuth } from '@/contexts/AuthContext';
+import { subscribeToConversationsForUser } from '@/services/messaging';
+import { getUserProfile } from '@/services/users';
+import { Conversation } from '@/types/messaging';
 import { useRouter } from 'expo-router';
-import conversationsJson from '@/testdata/conversations.json';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, Text, View } from 'react-native';
 
-const conversation_data = [
-    { recipient: "James James", title: "Tutoring", latestMessage: "How does tomorrow sound?", hoursAgo: 5, conversationId: "1"},
-    { recipient: "James James", title: "Tutoring", latestMessage: "How does tomorrow sound?", hoursAgo: 5, conversationId: "2"},
-    { recipient: "James James", title: "Tutoring", latestMessage: "How does tomorrow sound?", hoursAgo: 5, conversationId: "3"},
-    { recipient: "James James", title: "Tutoring", latestMessage: "How does tomorrow sound?", hoursAgo: 5, conversationId: "4"},
-    { recipient: "James James", title: "Tutoring", latestMessage: "How does tomorrow sound?", hoursAgo: 5, conversationId: "5"}
-]
+export default function MessagesTab() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [recipientNames, setRecipientNames] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
 
-export default function MessagesTab() { 
-    const router = useRouter()
-    const conversation_data = Object.values(conversationsJson)
-    return (
-        <View style={{flex:1}}>
-            <View style={{ flexDirection: "row", flex: 1, justifyContent:"space-between", backgroundColor:"#2774AE"}}>
-                <Text>Messages</Text>
-                <UserProfileButton radius={40} onPress={function (): void {
-                    throw new Error('Function not implemented.');
-                } }></UserProfileButton>
-            </View>
-            <View style={{ flex: 6}}>
-                <ScrollView>
-                    {conversation_data.map((conversation, index) => {
-                        const lastMessage = conversation.messages[conversation.messages.length - 1]
-                        const hoursAgo = Math.floor((Date.now() - new Date(lastMessage.timestamp).getTime())/(3600000))
-                        return (
-                            <View key={index} style={{padding: 10}}>
-                                <ConversationCard
-                                    
-                                    recipient={conversation.recipient}
-                                    title={conversation.title}
-                                    // PLACEHOLDER
-                                    recipientId={conversation.conversationId}
-                                    conversationId={conversation.conversationId}
-                                    latestMessage={conversation.messages[conversation.messages.length - 1].content}
-                                    hoursAgo={hoursAgo}
-                                    eventHandler={() => router.push({
-                                        pathname:'/(messages)/Conversation',
-                                        params: { recipient: conversation.recipient, title: conversation.title, conversationId: conversation.conversationId}
-                                    })}
-                                />
-                            </View>
-                        )
-                    })}
-                </ScrollView>
-            </View>
-            
-        </View>
-        
+  useEffect(() => {
+    if (!user?.uid) return;
+    return subscribeToConversationsForUser(
+      user.uid,
+      (next) => {
+        setConversations(next);
+        setError(null);
+      },
+      (e) => {
+        console.error('Failed to load conversations', e);
+        setError(e.message);
+      },
     );
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid || conversations.length === 0) return;
+    let active = true;
+
+    (async () => {
+      const entries = await Promise.all(
+        conversations.map(async (conversation) => {
+          const recipientId =
+            conversation.buyer_id === user.uid
+              ? conversation.seller_id
+              : conversation.buyer_id;
+          const profile = await getUserProfile(recipientId);
+          return [conversation.id, profile?.displayName ?? 'Unknown name'] as const;
+        }),
+      );
+      if (active) setRecipientNames(Object.fromEntries(entries));
+    })().catch((e) => console.error('Failed to load recipient names', e));
+
+    return () => {
+      active = false;
+    };
+  }, [conversations, user?.uid]);
+
+  if (!user?.uid) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Text>Sign in to view messages.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1 }}>
+      {error ? <Text style={{ padding: 12, color: '#b91c1c' }}>{error}</Text> : null}
+      <ScrollView>
+        {conversations.map((conversation) => {
+          const recipientId =
+            conversation.buyer_id === user.uid
+              ? conversation.seller_id
+              : conversation.buyer_id;
+          const recipient = recipientNames[conversation.id] ?? 'Unknown name';
+
+          return (
+            <View key={conversation.id} style={{ padding: 10 }}>
+              <ConversationCard
+                recipient={recipient}
+                title={conversation.title}
+                lastMessageContent={conversation.last_message_content}
+                lastMessageAt={conversation.last_message_at}
+                eventHandler={() =>
+                  router.push({
+                    pathname: '/(messages)/ConversationView' as any,
+                    params: {
+                      recipient,
+                      recipientId,
+                      title: conversation.title,
+                      conversationId: conversation.id,
+                    },
+                  })
+                }
+              />
+            </View>
+          );
+        })}
+        {conversations.length === 0 && !error ? (
+          <Text style={{ padding: 16, color: '#6b7280' }}>No conversations yet.</Text>
+        ) : null}
+      </ScrollView>
+    </View>
+  );
 }

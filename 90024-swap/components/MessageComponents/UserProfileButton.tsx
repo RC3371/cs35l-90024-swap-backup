@@ -1,6 +1,6 @@
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 
 interface UserProfileButtonProps {
     radius: number;
@@ -8,7 +8,7 @@ interface UserProfileButtonProps {
 }
 export const UserProfileButton: React.FC <UserProfileButtonProps> = ({radius, onPress}) => {
     return (
-        <View style={{
+        <TouchableOpacity onPress={onPress} style={{
             width: radius,
             height: radius,
             borderRadius: radius/2,
@@ -17,6 +17,6 @@ export const UserProfileButton: React.FC <UserProfileButtonProps> = ({radius, on
             justifyContent: 'center'
         }}>
             <Ionicons name="person" size={radius} color="#2774AE"></Ionicons>
-        </View>
+        </TouchableOpacity>
     )
 }

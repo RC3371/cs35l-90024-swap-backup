@@ -4,7 +4,6 @@ import {
   doc,
   getDoc,
   onSnapshot,
-  orderBy,
   query,
   serverTimestamp,
   updateDoc,
@@ -18,15 +17,6 @@ import {
 } from '@/components/Agreement.types';
 
 const COLLECTION = 'agreements';
-const MESSAGES_COLLECTION = 'agreementMessages';
-
-export interface AgreementMessage {
-  id: string;
-  conversationId: string;
-  senderId: string;
-  agreementId: string;
-  createdAt: number;
-}
 
 function stripId<T extends { id?: string }>(x: T): Omit<T, 'id'> {
   const { id: _ignored, ...rest } = x;
@@ -197,49 +187,5 @@ export async function rejectPendingEdit(id: string): Promise<void> {
     status: 'sent',
     pendingEdit: null,
     updatedAt: serverTimestamp(),
-  });
-}
-
-export async function postAgreementMessage(args: {
-  conversationId: string;
-  senderId: string;
-  agreementId: string;
-}): Promise<string> {
-  const ref = await addDoc(collection(db, MESSAGES_COLLECTION), {
-    conversationId: args.conversationId,
-    senderId: args.senderId,
-    agreementId: args.agreementId,
-    createdAt: serverTimestamp(),
-  });
-  return ref.id;
-}
-
-// Subscribe to agreement messages for a given conversation, ordered oldest first.
-// Falls back to client-side sort while serverTimestamp is still pending.
-export function subscribeToAgreementMessages(
-  conversationId: string,
-  onChange: (msgs: AgreementMessage[]) => void,
-): () => void {
-  const q = query(
-    collection(db, MESSAGES_COLLECTION),
-    where('conversationId', '==', conversationId),
-    orderBy('createdAt', 'asc'),
-  );
-  return onSnapshot(q, (snap) => {
-    const msgs: AgreementMessage[] = snap.docs.map((d) => {
-      const data = d.data() as any;
-      const created =
-        data.createdAt && typeof data.createdAt.toMillis === 'function'
-          ? data.createdAt.toMillis()
-          : Date.now();
-      return {
-        id: d.id,
-        conversationId: data.conversationId,
-        senderId: data.senderId,
-        agreementId: data.agreementId,
-        createdAt: created,
-      };
-    });
-    onChange(msgs);
   });
 }

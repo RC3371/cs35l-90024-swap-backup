@@ -1,10 +1,11 @@
 import { ListingCard } from '@/components/listing-card';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllListings, Listing } from '@/services/listings';
+import { getOrCreateConversationForListing } from '@/services/messaging';
 import { getSavedListingIds, savePost, unsavePost } from '@/services/saved';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React from 'react';
-import { ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 import { Categories } from '../../components/Listing.types';
 import { PillFilterCarousel, PillOption } from '../../components/PillFilterCarousel';
 import { SearchBar } from '../../components/SearchBar';
@@ -56,6 +57,35 @@ export default function Feed() {
             else await savePost(viewerUid, id);
         } catch (err) {
             console.error('Failed to toggle saved post', err);
+        }
+    }
+
+    async function handleMessage(listing: Listing) {
+        if (!viewerUid) {
+            Alert.alert('Not signed in', 'You must be signed in to send a message.');
+            return;
+        }
+        if (!listing.id || !listing.owner || listing.owner === viewerUid) return;
+
+        try {
+            const conversationId = await getOrCreateConversationForListing({
+                listingId: listing.id,
+                buyerId: viewerUid,
+                sellerId: listing.owner,
+                title: listing.title,
+            });
+            router.push({
+                pathname: '/(messages)/ConversationView' as any,
+                params: {
+                    recipient: listing.author,
+                    recipientId: listing.owner,
+                    title: listing.title,
+                    conversationId,
+                },
+            });
+        } catch (err) {
+            console.error('Failed to start conversation', err);
+            Alert.alert('Error', 'Could not start a conversation. Please try again.');
         }
     }
 
@@ -113,16 +143,7 @@ export default function Feed() {
                         }
                         onMessage={
                             listing.owner && listing.owner !== viewerUid
-                                ? () =>
-                                      router.push({
-                                          pathname: '/(messages)/Conversation',
-                                          params: {
-                                              recipient: listing.author,
-                                              recipientId: listing.owner,
-                                              title: listing.title,
-                                              conversationId: `new_${listing.owner}`,
-                                          },
-                                      })
+                                ? () => handleMessage(listing)
                                 : undefined
                         }
                         isSaved={listing.id ? savedIds.has(listing.id) : false}
