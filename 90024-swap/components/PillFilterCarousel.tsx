@@ -1,8 +1,9 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Topics } from './Listing.types';
 
-const options = ['All', 'Tutoring', 'Creative', 'Tech', 'Language'] as const;
-export type PillOption = (typeof options)[number];
+export type PillOption = 'All' | Topics;
+const options: PillOption[] = ['All', ...Object.values(Topics)];
 
 interface PillFilterCarouselProps {
     selectedOption: PillOption;
