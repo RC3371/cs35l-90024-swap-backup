@@ -3,10 +3,18 @@ import { MessageBubble } from '@/components/MessageComponents/MessageBubble';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendMessage, subscribeToConversationMessages } from '@/services/messaging';
 import { Message } from '@/types/messaging';
-import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function ConversationView() {
   const { user } = useAuth();
@@ -16,6 +24,7 @@ export default function ConversationView() {
     conversationId?: string;
   }>();
   const router = useRouter();
+  const tabBarHeight = useBottomTabBarHeight();
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
 
@@ -39,20 +48,31 @@ export default function ConversationView() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={tabBarHeight}
+    >
       <Stack.Screen
         options={{
           headerTitle: () => (
             <View style={{ alignItems: 'center' }}>
               <Text style={styles.headerTitle}>{recipient}</Text>
-              <Text style={styles.headerSubtitle}>{title}</Text>
+              <Text style={styles.headerTitle}>{title}</Text>
             </View>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.push('/(tabs)/messages')}>
-              <Ionicons name="arrow-back" size={24} color="black" />
+            <TouchableOpacity
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.replace('/(tabs)/messages')
+              }
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={{ paddingHorizontal: 4 }}
+            >
+              <Text style={{ color: '#2563eb', fontSize: 17, fontWeight: '600' }}>‹ Back</Text>
             </TouchableOpacity>
           ),
+          headerRight: () => null,
         }}
       />
 
@@ -69,19 +89,16 @@ export default function ConversationView() {
         ))}
       </ScrollView>
 
-      <View style={{ padding: 8 }}>
-        <MessageInputBar content={draft} onChangeText={setDraft} onSend={handleSend} />
-      </View>
-    </View>
+      <MessageInputBar content={draft} onChangeText={setDraft} onSend={handleSend} />
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   headerTitle: {
-    fontSize: 16,
-  },
-  headerSubtitle: {
-    fontSize: 12,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000',
   },
   messages: {
     padding: 8,

@@ -11,7 +11,9 @@ export default function MessagesTab() {
   const { user } = useAuth();
   const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [recipientNames, setRecipientNames] = useState<Record<string, string>>({});
+  const [recipients, setRecipients] = useState<
+    Record<string, { name: string; photo?: string }>
+  >({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,10 +43,13 @@ export default function MessagesTab() {
               ? conversation.seller_id
               : conversation.buyer_id;
           const profile = await getUserProfile(recipientId);
-          return [conversation.id, profile?.displayName ?? 'Unknown name'] as const;
+          return [
+            conversation.id,
+            { name: profile?.displayName ?? 'Unknown name', photo: profile?.photo },
+          ] as const;
         }),
       );
-      if (active) setRecipientNames(Object.fromEntries(entries));
+      if (active) setRecipients(Object.fromEntries(entries));
     })().catch((e) => console.error('Failed to load recipient names', e));
 
     return () => {
@@ -69,11 +74,13 @@ export default function MessagesTab() {
             conversation.buyer_id === user.uid
               ? conversation.seller_id
               : conversation.buyer_id;
-          const recipient = recipientNames[conversation.id] ?? 'Unknown name';
+          const recipientInfo = recipients[conversation.id];
+          const recipient = recipientInfo?.name ?? 'Unknown name';
 
           return (
             <View key={conversation.id} style={{ padding: 10 }}>
               <ConversationCard
+                profilePictureUrl={recipientInfo?.photo}
                 recipient={recipient}
                 recipientId={recipientId}
                 title={conversation.title}
@@ -82,7 +89,7 @@ export default function MessagesTab() {
                 lastMessageAt={conversation.last_message_at}
                 eventHandler={() =>
                   router.push({
-                    pathname: '/(messages)/ConversationView' as any,
+                    pathname: '/(tabs)/messages/conversation' as any,
                     params: {
                       recipient,
                       recipientId,

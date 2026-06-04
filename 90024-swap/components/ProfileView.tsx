@@ -6,6 +6,7 @@ import {
   Listing,
   setListingStatus,
 } from '@/services/listings';
+import { getOrCreateConversationForListing } from '@/services/messaging';
 import {
   getSavedListingIds,
   getSavedListings,
@@ -483,6 +484,32 @@ export function ProfileView({ uid, isOwner }: Props) {
               {...listing}
               version="compact"
               viewerUid={viewerUid}
+              // Same "Message" button as the feed: open (or create) the
+              // conversation for this listing with its owner.
+              onMessage={
+                viewerUid && listing.owner && listing.owner !== viewerUid && listing.id
+                  ? async () => {
+                      try {
+                        const conversationId = await getOrCreateConversationForListing({
+                          listingId: listing.id,
+                          buyerId: viewerUid,
+                          sellerId: listing.owner,
+                          title: listing.title,
+                        });
+                        router.push({
+                          pathname: '/(tabs)/messages/conversation' as any,
+                          params: {
+                            recipient: listing.author,
+                            title: listing.title,
+                            conversationId,
+                          },
+                        });
+                      } catch (error) {
+                        console.error('Could not open conversation', error);
+                      }
+                    }
+                  : undefined
+              }
               onEdit={ownerActions && tab === 'active' ? () => handleEdit(listing.id) : undefined}
               onArchive={ownerActions && tab === 'active' ? () => handleArchive(listing.id) : undefined}
               onUnarchive={ownerActions && tab === 'archived' ? () => handleUnarchive(listing.id) : undefined}
