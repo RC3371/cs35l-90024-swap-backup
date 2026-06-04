@@ -1,9 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ListingCardProps } from './Listing.types';
 
+function formatPhone(raw?: string) {
+  if (!raw) return raw;
+  const trimmed = raw.trim();
+  // Drop a leading US code (+1 / 1) but keep any other country code.
+  const m = trimmed.match(/^\+?1\s+(.*)$/);
+  return m ? m[1] : trimmed;
+}
 
 export const ListingCard: React.FC<ListingCardProps> = ({
   title,
@@ -18,7 +25,6 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   phone,
   status,
   owner,
-  version,
   eventHandler,
   onAuthorPress,
   onMessage,
@@ -31,7 +37,6 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   onToggleSave,
   viewerUid
 }) => {
-  const [currentVersion, setCurrentVersion] = useState(version ?? 'compact');
   const router = useRouter();
 
   function handleCreateAgreement() {
@@ -71,12 +76,6 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                 </TouchableOpacity>
               )}
             </View>
-            {onMessage && (
-              <TouchableOpacity onPress={onMessage} style={styles.messageButton} hitSlop={6}>
-                <Ionicons name="chatbubble-outline" size={13} color="#fff" />
-                <Text style={styles.messageButtonText}>Message</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
 
@@ -106,36 +105,34 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           </View>
         </View>
 
-        {/* Description is always shown; contact details + agreement action reveal on "See more". */}
+        {/* All listing details are shown automatically. */}
         <View style={styles.descriptionWrap}>
           {description ? <Text style={styles.descriptionText}>{description}</Text> : null}
-          {currentVersion !== 'compact' && (
-            <>
-              {email ? <Text style={styles.contact}>Email: {email}</Text> : null}
-              {phone ? <Text style={styles.contact}>Phone: {phone}</Text> : null}
-              {owner && owner !== viewerUid ? (
-                <TouchableOpacity
-                  style={styles.agreementButton}
-                  onPress={handleCreateAgreement}
-                >
-                  <Text style={styles.agreementButtonText}>Create Agreement</Text>
-                </TouchableOpacity>
-              ) : null}
-            </>
-          )}
+          {email ? <Text style={styles.contact}>Email: {email.toLowerCase()}</Text> : null}
+          {phone ? <Text style={styles.contact}>Phone: {formatPhone(phone)}</Text> : null}
         </View>
 
-        <View style={styles.footerRow}>
-          <TouchableOpacity
-            onPress={() => setCurrentVersion(prev => (prev === 'compact' ? 'description' : 'compact'))}
-            style={styles.toggleButton}
-          >
-            <Text style={styles.toggleText}>
-              {currentVersion === 'compact' ? 'See more...' : 'See less...'}
-            </Text>
-          </TouchableOpacity>
+        {(onMessage || (owner && owner !== viewerUid)) && (
+          <View style={styles.cardActionsRow}>
+            {onMessage && (
+              <TouchableOpacity onPress={onMessage} style={styles.messageButton} hitSlop={6}>
+                <Ionicons name="chatbubble-outline" size={13} color="#fff" />
+                <Text style={styles.messageButtonText}>Message</Text>
+              </TouchableOpacity>
+            )}
+            {owner && owner !== viewerUid ? (
+              <TouchableOpacity
+                style={styles.agreementButton}
+                onPress={handleCreateAgreement}
+              >
+                <Text style={styles.agreementButtonText}>Create Agreement</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        )}
 
-          {(onEdit || onArchive || onUnarchive || onPublish || onDelete) && (
+        {(onEdit || onArchive || onUnarchive || onPublish || onDelete) && (
+          <View style={styles.footerRow}>
             <View style={styles.actionRow}>
               {onEdit && (
                 <TouchableOpacity onPress={onEdit} style={styles.actionButton}>
@@ -163,8 +160,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                 </TouchableOpacity>
               )}
             </View>
-          )}
-        </View>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -214,15 +211,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2563eb',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    marginTop: 6
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14
   },
   messageButtonText: {
     color: '#fff',
-    fontWeight: '600',
-    fontSize: 12,
+    fontWeight: '700',
+    fontSize: 13,
     marginLeft: 4
   },
   price: {
@@ -302,21 +298,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 6
   },
+  cardActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    gap: 8
+  },
   footerRow: {
     marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  toggleButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 4,
-    paddingHorizontal: 6
-  },
-  toggleText: {
-    color: '#0a84ff',
-    fontWeight: '600',
-    fontSize: 13
+    justifyContent: 'flex-end'
   },
   actionRow: {
     flexDirection: 'row',
@@ -348,12 +340,10 @@ const styles = StyleSheet.create({
     fontSize: 13
   },
   agreementButton: {
-    marginTop: 10,
-    alignSelf: 'flex-start',
     backgroundColor: '#2563eb',
-    paddingVertical: 8,
+    paddingVertical: 7,
     paddingHorizontal: 14,
-    borderRadius: 10
+    borderRadius: 14
   },
   agreementButtonText: {
     color: '#fff',
