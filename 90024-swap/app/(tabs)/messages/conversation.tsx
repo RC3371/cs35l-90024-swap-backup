@@ -7,6 +7,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ConversationView() {
   const { user } = useAuth();
@@ -27,7 +29,18 @@ export default function ConversationView() {
   const tabBarHeight = useBottomTabBarHeight();
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
+  const [conversation, setConversation] = useState<any>([]);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const insets= useSafeAreaInsets();
 
+  useEffect(() => {
+      const showListener = Keyboard.addListener('keyboardWillShow', () => setIsKeyboardVisible(true))
+      const hideListener = Keyboard.addListener('keyboardWillHide', () => setIsKeyboardVisible(false))
+      return () => {
+          showListener.remove()
+          hideListener.remove()
+      }
+  }, [])
   useEffect(() => {
     if (!conversationId) return;
     return subscribeToConversationMessages(
@@ -89,7 +102,9 @@ export default function ConversationView() {
         ))}
       </ScrollView>
 
-      <MessageInputBar content={draft} onChangeText={setDraft} onSend={handleSend} />
+        <View style={{paddingBottom: isKeyboardVisible ? 12 : insets.bottom}}>
+          <MessageInputBar content={draft} onChangeText={setDraft} onSend={handleSend}/>
+        </View>
     </KeyboardAvoidingView>
   );
 }
