@@ -17,6 +17,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        headerTitle: '90024 Swap',
         // logout icon in the header so we can bounce back to the login screen
         headerRight: () => (
           <Pressable onPress={() => signOut()} style={{ paddingHorizontal: 16 }}>
@@ -46,7 +47,6 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="agreements"
         options={{
-          title: 'Agreements',
           tabBarLabel: 'Agreements',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="document-text" color={color} size={size} />
