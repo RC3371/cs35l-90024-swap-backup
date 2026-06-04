@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -31,6 +32,14 @@ const STATUS_RANK: Record<Agreement['status'], number> = {
   accepted: 3,
 };
 
+type RoleFilter = 'all' | 'providing' | 'buying';
+
+const FILTERS: { key: RoleFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'providing', label: 'Providing' },
+  { key: 'buying', label: 'Buying' },
+];
+
 function toMillis(value: any): number {
   if (value == null) return 0;
   if (typeof value === 'number') return value;
@@ -45,6 +54,8 @@ export default function AgreementsTab() {
 
   const [agreements, setAgreements] = useState<Agreement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<RoleFilter>('all');
 
   useEffect(() => {
     if (!uid) {
@@ -53,32 +64,52 @@ export default function AgreementsTab() {
       return;
     }
     setLoading(true);
-    const unsub = subscribeToAgreementsForUser(uid, (list) => {
-      setAgreements(list);
-      setLoading(false);
-    });
+    setError(null);
+    const unsub = subscribeToAgreementsForUser(
+      uid,
+      (list) => {
+        setAgreements(list);
+        setError(null);
+        setLoading(false);
+      },
+      (e) => {
+        setError(e.message);
+        setLoading(false);
+      },
+    );
     return unsub;
   }, [uid]);
 
-  const ordered = useMemo(
-    () =>
-      [...agreements].sort((a, b) => {
-        const rank = STATUS_RANK[a.status] - STATUS_RANK[b.status];
-        if (rank !== 0) return rank;
-        return toMillis(b.updatedAt) - toMillis(a.updatedAt);
-      }),
-    [agreements],
+  const isProviding = (a: Agreement) => a.providerUid === uid;
+  const isBuying = (a: Agreement) => a.buyerUid === uid;
+
+  const counts = useMemo(
+    () => ({
+      all: agreements.length,
+      providing: agreements.filter(isProviding).length,
+      buying: agreements.filter(isBuying).length,
+    }),
+    [agreements, uid],
   );
 
-  function roleFor(a: Agreement): { otherName: string; youAre: string } {
-    if (a.providerUid === uid) return { otherName: a.buyerName, youAre: 'Provider' };
-    if (a.buyerUid === uid) return { otherName: a.providerName, youAre: 'Buyer' };
-    return { otherName: '—', youAre: 'Observer' };
-  }
+  const visible = useMemo(() => {
+    const filtered =
+      filter === 'providing'
+        ? agreements.filter(isProviding)
+        : filter === 'buying'
+        ? agreements.filter(isBuying)
+        : agreements;
+    return [...filtered].sort((a, b) => {
+      const rank = STATUS_RANK[a.status] - STATUS_RANK[b.status];
+      if (rank !== 0) return rank;
+      return toMillis(b.updatedAt) - toMillis(a.updatedAt);
+    });
+  }, [agreements, filter, uid]);
 
   function renderItem({ item }: { item: Agreement }) {
     const meta = STATUS_META[item.status];
-    const { otherName, youAre } = roleFor(item);
+    const youAre = isProviding(item) ? 'Provider' : isBuying(item) ? 'Buyer' : 'Observer';
+    const otherName = isProviding(item) ? item.buyerName : item.providerName;
     const dateText =
       item.dates.length === 0
         ? 'No dates set'
@@ -116,6 +147,27 @@ export default function AgreementsTab() {
     );
   }
 
+  function SegmentedFilter() {
+    return (
+      <View style={styles.segmentRow}>
+        {FILTERS.map(({ key, label }) => {
+          const selected = filter === key;
+          return (
+            <Pressable
+              key={key}
+              onPress={() => setFilter(key)}
+              style={[styles.segment, selected && styles.segmentActive]}
+            >
+              <Text style={[styles.segmentText, selected && styles.segmentTextActive]}>
+                {label} ({counts[key]})
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  }
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -124,27 +176,41 @@ export default function AgreementsTab() {
     );
   }
 
-  if (ordered.length === 0) {
+  if (error) {
     return (
       <View style={styles.centered}>
-        <Ionicons name="document-text-outline" size={42} color="#9ca3af" />
-        <Text style={styles.emptyTitle}>No agreements yet</Text>
-        <Text style={styles.emptySub}>
-          Send an agreement from a listing or a conversation and it will show up
-          here.
-        </Text>
+        <Ionicons name="alert-circle-outline" size={42} color="#dc2626" />
+        <Text style={styles.emptyTitle}>Couldn’t load agreements</Text>
+        <Text style={styles.emptySub}>{error}</Text>
       </View>
     );
   }
 
+  const emptyText =
+    filter === 'providing'
+      ? "You don't have any agreements where you're providing a service yet."
+      : filter === 'buying'
+      ? "You don't have any agreements where you're buying a service yet."
+      : 'Send an agreement from a listing or a conversation and it will show up here.';
+
   return (
-    <FlatList
-      style={styles.screen}
-      data={ordered}
-      keyExtractor={(a) => a.id}
-      renderItem={renderItem}
-      contentContainerStyle={styles.list}
-    />
+    <View style={styles.screen}>
+      <SegmentedFilter />
+      {visible.length === 0 ? (
+        <View style={styles.centered}>
+          <Ionicons name="document-text-outline" size={42} color="#9ca3af" />
+          <Text style={styles.emptyTitle}>No agreements here</Text>
+          <Text style={styles.emptySub}>{emptyText}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={visible}
+          keyExtractor={(a) => a.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+        />
+      )}
+    </View>
   );
 }
 
@@ -161,6 +227,32 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#111', marginTop: 4 },
   emptySub: { fontSize: 13, color: '#6b7280', textAlign: 'center', lineHeight: 19 },
+
+  segmentRow: {
+    flexDirection: 'row',
+    backgroundColor: '#eef0f4',
+    borderRadius: 10,
+    padding: 4,
+    margin: 12,
+    gap: 4,
+  },
+  segment: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  segmentActive: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  segmentText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
+  segmentTextActive: { color: '#111' },
 
   card: {
     backgroundColor: '#fff',

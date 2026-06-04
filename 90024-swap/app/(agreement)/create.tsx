@@ -6,7 +6,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -69,6 +68,8 @@ export default function CreateAgreement() {
   const [unit, setUnit] = useState<string>(initial.unit);
   const [otherDetails, setOtherDetails] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
+  // Shown inline so it works on web too (react-native-web's Alert is a no-op).
+  const [formError, setFormError] = useState<string | null>(null);
 
   function setMultiDay(next: boolean) {
     setIsMultiDay(next);
@@ -77,17 +78,18 @@ export default function CreateAgreement() {
   }
 
   async function handleSend() {
+    setFormError(null);
     if (dates.length === 0) {
-      Alert.alert('Pick a date', 'Choose at least one date for the agreement.');
+      setFormError('Choose at least one date for the agreement.');
       return;
     }
     const priceValue = parseFloat(price);
     if (!Number.isFinite(priceValue) || priceValue <= 0) {
-      Alert.alert('Price required', 'Enter a price greater than 0.');
+      setFormError('Enter a price greater than 0.');
       return;
     }
     if (unit.trim() === '') {
-      Alert.alert('Unit required', 'Enter a unit (e.g., hour, total).');
+      setFormError('Enter a unit (e.g., hour, total).');
       return;
     }
     const draft = {
@@ -114,13 +116,13 @@ export default function CreateAgreement() {
         // the new agreement card immediately.
         router.back();
       } else {
-        router.replace({
-          pathname: '/(agreement)/[id]',
-          params: { id },
-        });
+        // Started from a listing (no conversation): drop the user on the
+        // Agreements tab so they can see the agreement they just sent.
+        router.replace('/(tabs)/agreements');
       }
     } catch (e: any) {
-      Alert.alert('Could not send agreement', e?.message ?? String(e));
+      console.error('[create agreement] send failed', e);
+      setFormError(e?.message ?? 'Could not send agreement. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -213,22 +215,29 @@ export default function CreateAgreement() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.cancelBtn]}
-          onPress={() => router.back()}
-          disabled={submitting}
-        >
-          <Text style={styles.cancelText}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.primaryBtn, submitting && { opacity: 0.6 }]}
-          onPress={handleSend}
-          disabled={submitting}
-        >
-          <Text style={styles.primaryText}>
-            {submitting ? 'Sending…' : 'Send Agreement'}
-          </Text>
-        </TouchableOpacity>
+        {formError ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{formError}</Text>
+          </View>
+        ) : null}
+        <View style={styles.footerRow}>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.cancelBtn]}
+            onPress={() => router.back()}
+            disabled={submitting}
+          >
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.primaryBtn, submitting && { opacity: 0.6 }]}
+            onPress={handleSend}
+            disabled={submitting}
+          >
+            <Text style={styles.primaryText}>
+              {submitting ? 'Sending…' : 'Send Agreement'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -306,12 +315,28 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     padding: 16,
     backgroundColor: '#f8f9fb',
     borderTopWidth: 1,
     borderTopColor: '#eef2ff',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  errorBanner: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fecaca',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  errorText: {
+    color: '#b91c1c',
+    fontSize: 13,
+    fontWeight: '600',
   },
   actionBtn: {
     flex: 1,

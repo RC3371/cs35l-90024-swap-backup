@@ -78,6 +78,7 @@ function toMillis(value: any): number {
 export function subscribeToAgreementsForUser(
   uid: string,
   onChange: (agreements: Agreement[]) => void,
+  onError?: (error: Error) => void,
 ): () => void {
   const mapDocs = (snap: any): Agreement[] =>
     snap.docs.map((d: any) => ({ id: d.id, ...(d.data() as Omit<Agreement, 'id'>) }));
@@ -94,12 +95,18 @@ export function subscribeToAgreementsForUser(
     onChange(merged);
   };
 
+  const handleError = (e: any) => {
+    console.warn('[agreements] subscription error', e);
+    onError?.(e instanceof Error ? e : new Error(String(e)));
+  };
+
   const unsubProvider = onSnapshot(
     query(collection(db, COLLECTION), where('providerUid', '==', uid)),
     (snap) => {
       providerDocs = mapDocs(snap);
       emit();
     },
+    handleError,
   );
   const unsubBuyer = onSnapshot(
     query(collection(db, COLLECTION), where('buyerUid', '==', uid)),
@@ -107,6 +114,7 @@ export function subscribeToAgreementsForUser(
       buyerDocs = mapDocs(snap);
       emit();
     },
+    handleError,
   );
 
   return () => {
