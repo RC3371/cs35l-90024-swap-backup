@@ -102,7 +102,7 @@ export default function ConversationView() {
         ))}
       </ScrollView>
 
-        <View style={{paddingBottom: isKeyboardVisible ? 12 : insets.bottom}}>
+        <View style={{paddingBottom: isKeyboardVisible ? 12 : 0}}>
           <MessageInputBar content={draft} onChangeText={setDraft} onSend={handleSend}/>
         </View>
     </KeyboardAvoidingView>
