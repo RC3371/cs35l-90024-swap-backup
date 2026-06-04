@@ -28,7 +28,7 @@ export interface ListingCardProps {
     // Identity fields (populated once a listing is persisted to Firestore)
     id?: string;     // Firestore document id
     owner?: string;  // uid of the user who created the listing
-    status?: 'active' | 'archived'; // archived listings are hidden from the feed
+    status?: 'active' | 'archived' | 'draft'; // archived listings are hidden from the feed; drafts are private until published
 
     // Optional props to accomodate the description version of the card
     description?: string;
@@ -45,6 +45,7 @@ export interface ListingCardProps {
     onDelete?: () => void;      // when set, renders a Delete action (owner viewing own listing)
     onArchive?: () => void;     // when set, renders an Archive action (owner, active listing)
     onUnarchive?: () => void;   // when set, renders an Unarchive action (owner, archived listing)
+    onPublish?: () => void;     // when set, renders a Publish action (owner, draft listing)
     isSaved?: boolean;          // bookmark state, used with onToggleSave
     onToggleSave?: () => void;  // when set, renders a bookmark toggle (feed / provider / saved view)
     viewerUid?: string;         // current viewer's uid; hides self-only actions (e.g. Create Agreement on your own listing)

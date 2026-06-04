@@ -172,7 +172,11 @@ export default function AgreementsTab() {
               onPress={() => setFilter(key)}
               style={[styles.segment, selected && styles.segmentActive]}
             >
-              <Text style={[styles.segmentText, selected && styles.segmentTextActive]}>
+              <Text
+                style={[styles.segmentText, selected && styles.segmentTextActive]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
                 {label} ({counts[key]})
               </Text>
             </Pressable>
