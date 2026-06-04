@@ -48,6 +48,16 @@ export default function TabsLayout() {
           edit flow via router.push; hidden from the tab bar. */}
       <Tabs.Screen name="addListing" options={{ href: null }} />
       <Tabs.Screen
+        name="messages"
+        options={{
+          title: 'Messages',
+          tabBarLabel: 'Messages',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubble" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="agreements"
         options={{
           tabBarLabel: 'Agreements',

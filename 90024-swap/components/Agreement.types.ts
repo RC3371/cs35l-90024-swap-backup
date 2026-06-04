@@ -6,8 +6,8 @@ export type AgreementStatus =
   | 'completion-requested'
   | 'completed';
 
-// Single source of truth for each status's short label, shared by the in-chat
-// agreement card and the Agreements tab so the wording can't drift apart.
+// Single source of truth for each status's short label so agreement screens
+// and the Agreements tab use the same wording.
 export const AGREEMENT_STATUS_LABEL: Record<AgreementStatus, string> = {
   draft: 'Draft',
   sent: 'Awaiting acceptance',
@@ -35,7 +35,6 @@ export interface Agreement extends AgreementEditable {
   id: string;
   listingId?: string;
   listingTitle: string;
-  conversationId?: string;
 
   providerUid: string;
   providerName: string;
@@ -74,14 +73,12 @@ export function makeDraftAgreement(args: {
   unit?: string;
   price?: number;
   isMultiDay?: boolean;
-  conversationId?: string;
 }): Agreement {
   const now = Date.now();
   return {
     id: '',
     listingId: args.listingId,
     listingTitle: args.listingTitle,
-    conversationId: args.conversationId,
     providerUid: args.providerUid,
     providerName: args.providerName,
     buyerUid: args.buyerUid,

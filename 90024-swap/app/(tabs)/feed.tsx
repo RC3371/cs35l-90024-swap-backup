@@ -1,7 +1,9 @@
 import { ListingCard } from '@/components/listing-card';
+import { db } from '@/constants/firebaseConfig';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllListings, Listing } from '@/services/listings';
 import { getSavedListingIds, savePost, unsavePost } from '@/services/saved';
+import { addDoc, collection, getDocs, query, where } from '@firebase/firestore';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, View } from 'react-native';
@@ -9,6 +11,8 @@ import { Categories } from '../../components/Listing.types';
 import { PillFilterCarousel, PillOption } from '../../components/PillFilterCarousel';
 import { SearchBar } from '../../components/SearchBar';
 import { SegmentedControl } from '../../components/SegmentedControl';
+//import { addDoc, collection, getDocs, query, where } from '@firebase/firestore';
+//import { db } from '@/constants/firebaseConfig';
 
 export default function Feed() {
 
@@ -113,16 +117,53 @@ export default function Feed() {
                         }
                         onMessage={
                             listing.owner && listing.owner !== viewerUid
-                                ? () =>
-                                      router.push({
-                                          pathname: '/(messages)/Conversation',
-                                          params: {
-                                              recipient: listing.author,
-                                              recipientId: listing.owner,
-                                              title: listing.title,
-                                              conversationId: `new_${listing.owner}`,
-                                          },
-                                      })
+                                ? async () => {
+                                        if (!viewerUid || !listing.id) {
+                                            return;
+                                        }
+                                        const checkExistingQuery = query(
+                                            collection(db, "conversations"), 
+                                            where ("buyer_id", "==", viewerUid),
+                                            where ("listing_id", "==", listing.id)
+                                        )
+                                        try {
+                                            const existingConversation = await getDocs(checkExistingQuery)
+                                            if(!existingConversation.empty) {
+                                                router.push({
+                                                    pathname: '/(messages)/ConversationView',
+                                                    params: {
+                                                        recipient: listing.author,
+                                                        title: listing.title,
+                                                        conversationId: existingConversation.docs[0].id,
+                                                    },
+                                                })
+                                                return;
+                                            }
+                                            const newConversation = await addDoc(collection(db, "conversations"), {
+                                                listing_id: listing.id,
+                                                buyer_id: viewerUid,
+                                                seller_id: listing.owner,
+                                                participants: [viewerUid, listing.owner],
+                                                title: listing.title,
+                                                last_message_content: null,
+                                                last_message_at: null,
+                                                last_message_id: null,
+                                                created_at: new Date().toISOString()
+                                            })
+                                        
+                                            router.push({
+                                                pathname: '/(messages)/ConversationView',
+                                                params: {
+                                                    recipient: listing.author,
+                                                    title: listing.title,
+                                                    conversationId: newConversation.id,
+                                                },
+                                            })
+                                        } catch (error) {
+                                            console.error("Could not create conversation", error)
+                                            return
+                                        }
+                                    }
                                 : undefined
                         }
                         isSaved={listing.id ? savedIds.has(listing.id) : false}

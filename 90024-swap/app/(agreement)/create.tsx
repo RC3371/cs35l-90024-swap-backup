@@ -1,6 +1,6 @@
 import { Calendar } from '@/components/Calendar';
 import { makeDraftAgreement } from '@/components/Agreement.types';
-import { createAgreement, postAgreementMessage } from '@/constants/agreements';
+import { createAgreement } from '@/constants/agreements';
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -28,7 +28,6 @@ type CreateParams = {
   otherName?: string;
   // Which side the current user is on for this listing.
   currentUserRole?: 'provider' | 'buyer';
-  conversationId?: string;
 };
 
 export default function CreateAgreement() {
@@ -55,9 +54,18 @@ export default function CreateAgreement() {
         listingTitle: params.listingTitle ?? 'Untitled listing',
         unit: params.unit,
         price: params.price ? parseFloat(params.price) || 0 : 0,
-        conversationId: params.conversationId,
       }),
-    [],
+    [
+      currentName,
+      currentUid,
+      params.listingId,
+      params.listingTitle,
+      params.otherName,
+      params.otherUid,
+      params.price,
+      params.unit,
+      role,
+    ],
   );
 
   const [isMultiDay, setIsMultiDay] = useState(initial.isMultiDay);
@@ -107,23 +115,8 @@ export default function CreateAgreement() {
     };
     try {
       setSubmitting(true);
-      const id = await createAgreement(draft);
-      if (params.conversationId) {
-        // Actually deliver: persist a message in Firestore so both parties'
-        // conversation views see the agreement card via subscription.
-        await postAgreementMessage({
-          conversationId: params.conversationId,
-          senderId: currentUid,
-          agreementId: id,
-        });
-        // Pop back to the existing conversation; its subscription will render
-        // the new agreement card immediately.
-        router.back();
-      } else {
-        // Started from a listing (no conversation): drop the user on the
-        // Agreements tab so they can see the agreement they just sent.
-        router.replace('/(tabs)/agreements');
-      }
+      await createAgreement(draft);
+      router.replace('/(tabs)/agreements');
     } catch (e: any) {
       console.error('[create agreement] send failed', e);
       setFormError(e?.message ?? 'Could not send agreement. Please try again.');

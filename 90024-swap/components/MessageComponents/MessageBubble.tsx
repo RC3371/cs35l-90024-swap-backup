@@ -1,40 +1,23 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { AgreementCard } from './AgreementCard';
-
-const current_user = 'user_2' // replace with get userid function
-
-export type MessageType = 'text' | 'agreement';
 
 interface MessageBubbleProps {
-    senderId: string,
-    messageId: string,
-    content: string,
-    timestamp: string,
-    type?: MessageType,
-    agreementId?: string,
+    current_user_id: string;
+    sender_id: string;
+    message_id: string;
+    content: string;
+    created_at: string;
 }
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
-  senderId,
+  current_user_id,
+  sender_id,
   content,
-  type,
-  agreementId,
 }) => {
-  const mine = current_user === senderId;
-
-  if (type === 'agreement' && agreementId) {
-    return (
-      <AgreementCard
-        agreementId={agreementId}
-        fallbackTitle={content}
-        alignRight={mine}
-      />
-    );
-  }
+  const mine = current_user_id === sender_id;
 
   return (
     <View style={[{
-        backgroundColor: mine ? "#2774AE" : "white",
+        backgroundColor: mine ? "#0a84ff" : "white",
         borderRadius: 10,
         paddingHorizontal: 10,
         paddingVertical: 8,

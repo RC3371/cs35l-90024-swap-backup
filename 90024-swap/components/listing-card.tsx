@@ -7,6 +7,7 @@ import { ListingCardProps } from './Listing.types';
 
 export const ListingCard: React.FC<ListingCardProps> = ({
   title,
+  id,
   author,
   price,
   unit,
@@ -38,6 +39,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
       pathname: '/(agreement)/create',
       params: {
         listingTitle: title,
+        listingId: id,
         unit,
         price: String(price),
         otherName: author,
