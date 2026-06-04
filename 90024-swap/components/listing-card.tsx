@@ -1,5 +1,5 @@
-
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ListingCardProps } from './Listing.types';
@@ -28,6 +28,20 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   onToggleSave
 }) => {
   const [currentVersion, setCurrentVersion] = useState(version ?? 'compact');
+  const router = useRouter();
+
+  function handleCreateAgreement() {
+    router.push({
+      pathname: '/(agreement)/create',
+      params: {
+        listingTitle: title,
+        unit,
+        price: String(price),
+        otherName: author,
+        currentUserRole: 'buyer',
+      },
+    });
+  }
 
   return (
     <TouchableOpacity onPress={eventHandler} style={styles.card} activeOpacity={0.9}>
@@ -86,13 +100,19 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           </View>
         </View>
 
-        {/* Description is always shown; contact details reveal on "See more". */}
+        {/* Description is always shown; contact details + agreement action reveal on "See more". */}
         <View style={styles.descriptionWrap}>
           {description ? <Text style={styles.descriptionText}>{description}</Text> : null}
           {currentVersion !== 'compact' && (
             <>
               {email ? <Text style={styles.contact}>Email: {email}</Text> : null}
               {phone ? <Text style={styles.contact}>Phone: {phone}</Text> : null}
+              <TouchableOpacity
+                style={styles.agreementButton}
+                onPress={handleCreateAgreement}
+              >
+                <Text style={styles.agreementButtonText}>Create Agreement</Text>
+              </TouchableOpacity>
             </>
           )}
         </View>
@@ -307,6 +327,19 @@ const styles = StyleSheet.create({
   deleteText: {
     color: '#d32f2f',
     fontWeight: '600',
+    fontSize: 13
+  },
+  agreementButton: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    backgroundColor: '#2563eb',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10
+  },
+  agreementButtonText: {
+    color: '#fff',
+    fontWeight: '700',
     fontSize: 13
   }
 });
