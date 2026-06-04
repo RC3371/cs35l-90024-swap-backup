@@ -38,6 +38,16 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="agreements"
+        options={{
+          title: 'Agreements',
+          tabBarLabel: 'Agreements',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="document-text" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           tabBarLabel: 'Profile',

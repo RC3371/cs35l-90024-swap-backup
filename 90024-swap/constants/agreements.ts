@@ -63,6 +63,58 @@ export function subscribeToAgreement(
   });
 }
 
+// Firestore stores createdAt/updatedAt as serverTimestamp() (a Timestamp once
+// read back), but a doc written locally may still hold a number. Normalize.
+function toMillis(value: any): number {
+  if (value == null) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  return 0;
+}
+
+// Subscribe to every agreement the user is a party to (either provider or
+// buyer), newest activity first. Firestore has no cross-field OR that plays
+// nicely with onSnapshot, so we run one listener per role and merge.
+export function subscribeToAgreementsForUser(
+  uid: string,
+  onChange: (agreements: Agreement[]) => void,
+): () => void {
+  const mapDocs = (snap: any): Agreement[] =>
+    snap.docs.map((d: any) => ({ id: d.id, ...(d.data() as Omit<Agreement, 'id'>) }));
+
+  let providerDocs: Agreement[] = [];
+  let buyerDocs: Agreement[] = [];
+
+  const emit = () => {
+    const byId = new Map<string, Agreement>();
+    for (const a of [...providerDocs, ...buyerDocs]) byId.set(a.id, a);
+    const merged = Array.from(byId.values()).sort(
+      (a, b) => toMillis(b.updatedAt) - toMillis(a.updatedAt),
+    );
+    onChange(merged);
+  };
+
+  const unsubProvider = onSnapshot(
+    query(collection(db, COLLECTION), where('providerUid', '==', uid)),
+    (snap) => {
+      providerDocs = mapDocs(snap);
+      emit();
+    },
+  );
+  const unsubBuyer = onSnapshot(
+    query(collection(db, COLLECTION), where('buyerUid', '==', uid)),
+    (snap) => {
+      buyerDocs = mapDocs(snap);
+      emit();
+    },
+  );
+
+  return () => {
+    unsubProvider();
+    unsubBuyer();
+  };
+}
+
 export async function setAgreementStatus(
   id: string,
   status: AgreementStatus,
