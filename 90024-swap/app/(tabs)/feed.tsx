@@ -134,7 +134,7 @@ export default function Feed() {
                                             const existingConversation = await getDocs(checkExistingQuery)
                                             if(!existingConversation.empty) {
                                                 router.push({
-                                                    pathname: '/(tabs)/conversation' as any,
+                                                    pathname: '/(tabs)/messages/conversation' as any,
                                                     params: {
                                                         recipient: listing.author,
                                                         title: listing.title,
@@ -156,7 +156,7 @@ export default function Feed() {
                                             })
                                         
                                             router.push({
-                                                pathname: '/(messages)/ConversationView',
+                                                pathname: '/(tabs)/messages/conversation' as any,
                                                 params: {
                                                     recipient: listing.author,
                                                     title: listing.title,

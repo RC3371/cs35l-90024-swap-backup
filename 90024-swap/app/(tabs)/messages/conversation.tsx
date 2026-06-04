@@ -4,8 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { sendMessage, subscribeToConversationMessages } from '@/services/messaging';
 import { Message } from '@/types/messaging';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -24,33 +24,9 @@ export default function ConversationView() {
     conversationId?: string;
   }>();
   const router = useRouter();
-  const navigation = useNavigation();
   const tabBarHeight = useBottomTabBarHeight();
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: () => (
-        <View style={{ alignItems: 'center' }}>
-          <Text style={styles.headerTitle}>{recipient}</Text>
-          <Text style={styles.headerSubtitle}>{title}</Text>
-        </View>
-      ),
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() =>
-            router.canGoBack() ? router.back() : router.replace('/(tabs)/messages')
-          }
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={{ paddingHorizontal: 4 }}
-        >
-          <Text style={{ color: '#2563eb', fontSize: 17, fontWeight: '600' }}>‹ Back</Text>
-        </TouchableOpacity>
-      ),
-      headerRight: () => null,
-    });
-  }, [navigation, recipient, title, router]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -77,6 +53,29 @@ export default function ConversationView() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={tabBarHeight}
     >
+      <Stack.Screen
+        options={{
+          headerTitle: () => (
+            <View style={{ alignItems: 'center' }}>
+              <Text style={styles.headerTitle}>{recipient}</Text>
+              <Text style={styles.headerSubtitle}>{title}</Text>
+            </View>
+          ),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.replace('/(tabs)/messages')
+              }
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={{ paddingHorizontal: 4 }}
+            >
+              <Text style={{ color: '#2563eb', fontSize: 17, fontWeight: '600' }}>‹ Back</Text>
+            </TouchableOpacity>
+          ),
+          headerRight: () => null,
+        }}
+      />
+
       <ScrollView contentContainerStyle={styles.messages}>
         {messages.map((message) => (
           <MessageBubble

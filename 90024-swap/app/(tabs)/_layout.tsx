@@ -47,12 +47,14 @@ export default function TabsLayout() {
       {/* The create/edit form is reached from the Drafts screen and the profile
           edit flow via router.push; hidden from the tab bar. */}
       <Tabs.Screen name="addListing" options={{ href: null }} />
-      <Tabs.Screen name="conversation" options={{ href: null }} />
       <Tabs.Screen
         name="messages"
         options={{
           title: 'Messages',
           tabBarLabel: 'Messages',
+          // The messages tab nests its own Stack (list + conversation), which
+          // renders the header; hide the tab header to avoid a double header.
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubble" color={color} size={size} />
           ),

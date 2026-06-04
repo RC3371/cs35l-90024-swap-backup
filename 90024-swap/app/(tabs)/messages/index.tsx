@@ -89,7 +89,7 @@ export default function MessagesTab() {
                 lastMessageAt={conversation.last_message_at}
                 eventHandler={() =>
                   router.push({
-                    pathname: '/(tabs)/conversation' as any,
+                    pathname: '/(tabs)/messages/conversation' as any,
                     params: {
                       recipient,
                       recipientId,
