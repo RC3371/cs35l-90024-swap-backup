@@ -3,6 +3,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import { Pressable } from 'react-native';
 
+// Feed is the home/default route for the tab group (the old placeholder
+// index screen was removed).
+export const unstable_settings = {
+  anchor: 'feed',
+};
+
 export default function TabsLayout() {
   const { user, loading, signOut } = useAuth();
   if (loading) return null;
