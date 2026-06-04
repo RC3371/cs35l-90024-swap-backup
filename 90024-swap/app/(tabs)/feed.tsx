@@ -105,6 +105,7 @@ export default function Feed() {
                         key={listing.id}
                         {...listing}
                         version="compact"
+                        viewerUid={viewerUid}
                         onAuthorPress={
                             listing.owner
                                 ? () => router.push(`/provider/${listing.owner}`)
@@ -117,6 +118,7 @@ export default function Feed() {
                                           pathname: '/(messages)/Conversation',
                                           params: {
                                               recipient: listing.author,
+                                              recipientId: listing.owner,
                                               title: listing.title,
                                               conversationId: `new_${listing.owner}`,
                                           },

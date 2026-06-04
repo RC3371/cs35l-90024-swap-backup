@@ -482,6 +482,7 @@ export function ProfileView({ uid, isOwner }: Props) {
               key={listing.id}
               {...listing}
               version="compact"
+              viewerUid={viewerUid}
               onEdit={ownerActions && tab === 'active' ? () => handleEdit(listing.id) : undefined}
               onArchive={ownerActions && tab === 'active' ? () => handleArchive(listing.id) : undefined}
               onUnarchive={ownerActions && tab === 'archived' ? () => handleUnarchive(listing.id) : undefined}

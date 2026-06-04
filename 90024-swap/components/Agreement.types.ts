@@ -2,7 +2,9 @@ export type AgreementStatus =
   | 'draft'
   | 'sent'
   | 'accepted'
-  | 'edit-requested';
+  | 'edit-requested'
+  | 'completion-requested'
+  | 'completed';
 
 export interface PendingEdit {
   proposerUid: string;
@@ -36,6 +38,9 @@ export interface Agreement extends AgreementEditable {
   updatedAt: number;
 
   pendingEdit?: PendingEdit | null;
+  // Set to the uid of the party who marked the service completed, while waiting
+  // for the other party to confirm. Cleared once both agree (status 'completed').
+  completionRequestedBy?: string | null;
 }
 
 export function makeDraftAgreement(args: {
@@ -69,5 +74,6 @@ export function makeDraftAgreement(args: {
     createdAt: now,
     updatedAt: now,
     pendingEdit: null,
+    completionRequestedBy: null,
   };
 }

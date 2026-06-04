@@ -133,6 +133,36 @@ export async function setAgreementStatus(
   });
 }
 
+// Completing a service is two-sided: one party requests completion, the other
+// must confirm. requestCompletion -> confirmCompletion makes it 'completed';
+// cancelCompletion backs out to 'accepted'.
+export async function requestCompletion(
+  id: string,
+  requesterUid: string,
+): Promise<void> {
+  await updateDoc(doc(db, COLLECTION, id), {
+    status: 'completion-requested',
+    completionRequestedBy: requesterUid,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function confirmCompletion(id: string): Promise<void> {
+  await updateDoc(doc(db, COLLECTION, id), {
+    status: 'completed',
+    completionRequestedBy: null,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function cancelCompletion(id: string): Promise<void> {
+  await updateDoc(doc(db, COLLECTION, id), {
+    status: 'accepted',
+    completionRequestedBy: null,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 // One party proposes edits. Requires the other party to accept before they apply.
 export async function proposeEdit(
   id: string,

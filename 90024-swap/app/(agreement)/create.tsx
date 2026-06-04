@@ -92,6 +92,10 @@ export default function CreateAgreement() {
       setFormError('Enter a unit (e.g., hour, total).');
       return;
     }
+    if (initial.providerUid !== '' && initial.providerUid === initial.buyerUid) {
+      setFormError("You can't create an agreement with yourself.");
+      return;
+    }
     const draft = {
       ...initial,
       isMultiDay,

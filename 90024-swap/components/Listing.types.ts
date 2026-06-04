@@ -47,4 +47,5 @@ export interface ListingCardProps {
     onUnarchive?: () => void;   // when set, renders an Unarchive action (owner, archived listing)
     isSaved?: boolean;          // bookmark state, used with onToggleSave
     onToggleSave?: () => void;  // when set, renders a bookmark toggle (feed / provider / saved view)
+    viewerUid?: string;         // current viewer's uid; hides self-only actions (e.g. Create Agreement on your own listing)
 }

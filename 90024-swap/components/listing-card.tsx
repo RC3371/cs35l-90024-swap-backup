@@ -16,6 +16,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   email,
   phone,
   status,
+  owner,
   version,
   eventHandler,
   onAuthorPress,
@@ -25,7 +26,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   onArchive,
   onUnarchive,
   isSaved,
-  onToggleSave
+  onToggleSave,
+  viewerUid
 }) => {
   const [currentVersion, setCurrentVersion] = useState(version ?? 'compact');
   const router = useRouter();
@@ -38,6 +40,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         unit,
         price: String(price),
         otherName: author,
+        otherUid: owner,
         currentUserRole: 'buyer',
       },
     });
@@ -107,12 +110,14 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             <>
               {email ? <Text style={styles.contact}>Email: {email}</Text> : null}
               {phone ? <Text style={styles.contact}>Phone: {phone}</Text> : null}
-              <TouchableOpacity
-                style={styles.agreementButton}
-                onPress={handleCreateAgreement}
-              >
-                <Text style={styles.agreementButtonText}>Create Agreement</Text>
-              </TouchableOpacity>
+              {owner && owner !== viewerUid ? (
+                <TouchableOpacity
+                  style={styles.agreementButton}
+                  onPress={handleCreateAgreement}
+                >
+                  <Text style={styles.agreementButtonText}>Create Agreement</Text>
+                </TouchableOpacity>
+              ) : null}
             </>
           )}
         </View>

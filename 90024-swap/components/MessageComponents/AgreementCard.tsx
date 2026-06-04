@@ -34,6 +34,8 @@ export const AgreementCard: React.FC<AgreementCardProps> = ({
     sent: 'Awaiting acceptance',
     accepted: 'Accepted',
     'edit-requested': 'Edit proposed',
+    'completion-requested': 'Completion pending',
+    completed: 'Completed',
   };
 
   return (

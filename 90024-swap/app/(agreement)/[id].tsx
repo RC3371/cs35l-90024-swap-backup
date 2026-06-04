@@ -2,8 +2,11 @@ import { Calendar } from '@/components/Calendar';
 import { Agreement, AgreementEditable } from '@/components/Agreement.types';
 import {
   acceptPendingEdit,
+  cancelCompletion,
+  confirmCompletion,
   proposeEdit,
   rejectPendingEdit,
+  requestCompletion,
   setAgreementStatus,
   subscribeToAgreement,
 } from '@/constants/agreements';
@@ -76,6 +79,7 @@ export default function AgreementDetail() {
 
   const pending = agreement.pendingEdit ?? null;
   const iProposedEdit = !!pending && pending.proposerUid === myUid;
+  const iRequestedCompletion = agreement.completionRequestedBy === myUid;
 
   async function handleAccept() {
     try {
@@ -99,6 +103,30 @@ export default function AgreementDetail() {
       await rejectPendingEdit(agreement!.id);
     } catch (e: any) {
       Alert.alert('Could not reject edit', e?.message ?? String(e));
+    }
+  }
+
+  async function handleRequestCompletion() {
+    try {
+      await requestCompletion(agreement!.id, myUid);
+    } catch (e: any) {
+      Alert.alert('Could not mark completed', e?.message ?? String(e));
+    }
+  }
+
+  async function handleConfirmCompletion() {
+    try {
+      await confirmCompletion(agreement!.id);
+    } catch (e: any) {
+      Alert.alert('Could not confirm completion', e?.message ?? String(e));
+    }
+  }
+
+  async function handleCancelCompletion() {
+    try {
+      await cancelCompletion(agreement!.id);
+    } catch (e: any) {
+      Alert.alert('Could not cancel', e?.message ?? String(e));
     }
   }
 
@@ -195,22 +223,24 @@ export default function AgreementDetail() {
             </Section>
           ) : null}
 
-          {isParty && agreement.status !== 'accepted' && !pending && (
-            <View style={styles.row}>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.cancelBtn]}
-                onPress={() => setEditing(true)}
-              >
-                <Text style={styles.cancelText}>Propose edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.primaryBtn]}
-                onPress={handleAccept}
-              >
-                <Text style={styles.primaryText}>Accept</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          {isParty &&
+            (agreement.status === 'sent' || agreement.status === 'draft') &&
+            !pending && (
+              <View style={styles.row}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.cancelBtn]}
+                  onPress={() => setEditing(true)}
+                >
+                  <Text style={styles.cancelText}>Propose edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.primaryBtn]}
+                  onPress={handleAccept}
+                >
+                  <Text style={styles.primaryText}>Accept</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
           {isParty && agreement.status === 'accepted' && (
             <View style={styles.row}>
@@ -220,7 +250,55 @@ export default function AgreementDetail() {
               >
                 <Text style={styles.cancelText}>Propose edit</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.primaryBtn]}
+                onPress={handleRequestCompletion}
+              >
+                <Text style={styles.primaryText}>Mark as completed</Text>
+              </TouchableOpacity>
             </View>
+          )}
+
+          {isParty && agreement.status === 'completion-requested' && (
+            <View style={styles.pendingBox}>
+              <Text style={styles.pendingTitle}>Completion pending</Text>
+              <Text style={styles.pendingSub}>
+                {iRequestedCompletion
+                  ? 'Waiting for the other party to confirm the service is completed.'
+                  : 'The other party marked this service completed. Confirm to close it out.'}
+              </Text>
+              {iRequestedCompletion ? (
+                <View style={styles.row}>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.cancelBtn]}
+                    onPress={handleCancelCompletion}
+                  >
+                    <Text style={styles.cancelText}>Cancel request</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.row}>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.cancelBtn]}
+                    onPress={handleCancelCompletion}
+                  >
+                    <Text style={styles.cancelText}>Not yet</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.primaryBtn]}
+                    onPress={handleConfirmCompletion}
+                  >
+                    <Text style={styles.primaryText}>Confirm completed</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
+
+          {agreement.status === 'completed' && (
+            <Text style={styles.observerNote}>
+              This service has been marked completed.
+            </Text>
           )}
 
           {myRole === 'observer' && (
@@ -257,6 +335,12 @@ function StatusBanner({ status }: { status: Agreement['status'] }) {
     sent: { text: 'Awaiting acceptance', bg: '#eef2ff', fg: '#1e40af' },
     accepted: { text: 'Accepted by both parties', bg: '#dcfce7', fg: '#166534' },
     'edit-requested': { text: 'Edit proposed', bg: '#fef3c7', fg: '#92400e' },
+    'completion-requested': {
+      text: 'Completion pending — awaiting confirmation',
+      bg: '#e0f2fe',
+      fg: '#075985',
+    },
+    completed: { text: 'Completed', bg: '#e5e7eb', fg: '#374151' },
   };
   const s = map[status];
   return (

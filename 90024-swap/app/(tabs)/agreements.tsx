@@ -22,23 +22,30 @@ const STATUS_META: Record<
   sent: { label: 'Awaiting acceptance', bg: '#eef2ff', fg: '#1e40af' },
   accepted: { label: 'Accepted', bg: '#dcfce7', fg: '#166534' },
   'edit-requested': { label: 'Edit proposed', bg: '#fef3c7', fg: '#92400e' },
+  'completion-requested': { label: 'Completion pending', bg: '#e0f2fe', fg: '#075985' },
+  completed: { label: 'Completed', bg: '#e5e7eb', fg: '#374151' },
 };
 
 // Agreements still needing attention sort above settled (accepted) ones.
 const STATUS_RANK: Record<Agreement['status'], number> = {
   'edit-requested': 0,
-  sent: 1,
-  draft: 2,
-  accepted: 3,
+  'completion-requested': 1,
+  sent: 2,
+  draft: 3,
+  accepted: 4,
+  completed: 5,
 };
 
-type RoleFilter = 'all' | 'providing' | 'buying';
+type RoleFilter = 'all' | 'providing' | 'buying' | 'completed';
 
 const FILTERS: { key: RoleFilter; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'providing', label: 'Providing' },
   { key: 'buying', label: 'Buying' },
+  { key: 'completed', label: 'Completed' },
 ];
+
+const isCompleted = (a: Agreement) => a.status === 'completed';
 
 function toMillis(value: any): number {
   if (value == null) return 0;
@@ -83,22 +90,31 @@ export default function AgreementsTab() {
   const isProviding = (a: Agreement) => a.providerUid === uid;
   const isBuying = (a: Agreement) => a.buyerUid === uid;
 
-  const counts = useMemo(
-    () => ({
-      all: agreements.length,
-      providing: agreements.filter(isProviding).length,
-      buying: agreements.filter(isBuying).length,
-    }),
-    [agreements, uid],
-  );
+  // The role filters (All / Providing / Buying) show only active agreements;
+  // completed ones live under their own filter so they stay viewable.
+  const counts = useMemo(() => {
+    const active = agreements.filter((a) => !isCompleted(a));
+    return {
+      all: active.length,
+      providing: active.filter(isProviding).length,
+      buying: active.filter(isBuying).length,
+      completed: agreements.filter(isCompleted).length,
+    };
+  }, [agreements, uid]);
 
   const visible = useMemo(() => {
-    const filtered =
-      filter === 'providing'
-        ? agreements.filter(isProviding)
-        : filter === 'buying'
-        ? agreements.filter(isBuying)
-        : agreements;
+    let filtered: Agreement[];
+    if (filter === 'completed') {
+      filtered = agreements.filter(isCompleted);
+    } else {
+      const active = agreements.filter((a) => !isCompleted(a));
+      filtered =
+        filter === 'providing'
+          ? active.filter(isProviding)
+          : filter === 'buying'
+          ? active.filter(isBuying)
+          : active;
+    }
     return [...filtered].sort((a, b) => {
       const rank = STATUS_RANK[a.status] - STATUS_RANK[b.status];
       if (rank !== 0) return rank;
@@ -188,9 +204,11 @@ export default function AgreementsTab() {
 
   const emptyText =
     filter === 'providing'
-      ? "You don't have any agreements where you're providing a service yet."
+      ? "You don't have any active agreements where you're providing a service."
       : filter === 'buying'
-      ? "You don't have any agreements where you're buying a service yet."
+      ? "You don't have any active agreements where you're buying a service."
+      : filter === 'completed'
+      ? 'No completed agreements yet. Mark an agreement completed once the service is done.'
       : 'Send an agreement from a listing or a conversation and it will show up here.';
 
   return (

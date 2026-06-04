@@ -79,7 +79,7 @@ export default function ConversationView() {
                 otherUid: (params.recipientId as string) ?? '',
                 otherName: (recipient as string) ?? '',
                 listingTitle: (title as string) ?? '',
-                currentUserRole: 'provider',
+                currentUserRole: 'buyer',
                 conversationId: (conversationId as string) ?? '',
             },
         });
