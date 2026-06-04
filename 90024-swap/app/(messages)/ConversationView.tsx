@@ -1,12 +1,12 @@
-import { MessageBubble } from '@/components/MessageComponents/MessageBubble';
 import { MessageInputBar } from '@/components/MessageComponents/MessageInputBar';
+import { MessageBubble } from '@/components/MessageComponents/MessageBubble';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendMessage, subscribeToConversationMessages } from '@/services/messaging';
 import { Message } from '@/types/messaging';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ConversationView() {
   const { user } = useAuth();
@@ -29,7 +29,7 @@ export default function ConversationView() {
   }, [conversationId]);
 
   async function handleSend() {
-    if (!user?.uid || !conversationId || draft.trim() === '') return;
+    if (!user?.uid || !conversationId || draft === '') return;
     try {
       await sendMessage(conversationId, user.uid, draft);
       setDraft('');
@@ -44,8 +44,8 @@ export default function ConversationView() {
         options={{
           headerTitle: () => (
             <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 16 }}>{recipient}</Text>
-              <Text style={{ fontSize: 12 }}>{title}</Text>
+              <Text style={styles.headerTitle}>{recipient}</Text>
+              <Text style={styles.headerSubtitle}>{title}</Text>
             </View>
           ),
           headerLeft: () => (
@@ -56,12 +56,14 @@ export default function ConversationView() {
         }}
       />
 
-      <ScrollView contentContainerStyle={{ padding: 8, gap: 6 }}>
+      <ScrollView contentContainerStyle={styles.messages}>
         {messages.map((message) => (
           <MessageBubble
             key={message.id}
-            currentUserId={user?.uid ?? ''}
-            senderId={message.sender_id}
+            current_user_id={user?.uid ?? ''}
+            sender_id={message.sender_id}
+            message_id={message.id}
+            created_at={message.created_at}
             content={message.content}
           />
         ))}
@@ -73,3 +75,16 @@ export default function ConversationView() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  headerTitle: {
+    fontSize: 16,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+  },
+  messages: {
+    padding: 8,
+    gap: 6,
+  },
+});

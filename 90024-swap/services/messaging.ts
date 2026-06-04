@@ -49,16 +49,13 @@ export function subscribeToConversationsForUser(
   const q = query(
     collection(db, CONVERSATIONS),
     where('participants', 'array-contains', uid),
+    orderBy('last_message_at', 'desc'),
   );
 
   return onSnapshot(
     q,
     (snap) => {
-      onChange(
-        snap.docs
-          .map((d) => mapConversation(d.id, d.data()))
-          .sort((a, b) => b.last_message_at.localeCompare(a.last_message_at)),
-      );
+      onChange(snap.docs.map((d) => mapConversation(d.id, d.data())));
     },
     (e) => onError?.(e instanceof Error ? e : new Error(String(e))),
   );

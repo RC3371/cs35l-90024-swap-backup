@@ -2,20 +2,22 @@ import React from 'react';
 import { Text, View } from 'react-native';
 
 interface MessageBubbleProps {
-    currentUserId: string,
-    senderId: string,
-    content: string,
+    current_user_id: string;
+    sender_id: string;
+    message_id: string;
+    content: string;
+    created_at: string;
 }
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
-  currentUserId,
-  senderId,
+  current_user_id,
+  sender_id,
   content,
 }) => {
-  const mine = currentUserId === senderId;
+  const mine = current_user_id === sender_id;
 
   return (
     <View style={[{
-        backgroundColor: mine ? "#2774AE" : "white",
+        backgroundColor: mine ? "#0a84ff" : "white",
         borderRadius: 10,
         paddingHorizontal: 10,
         paddingVertical: 8,

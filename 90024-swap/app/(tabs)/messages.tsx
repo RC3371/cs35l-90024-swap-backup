@@ -75,7 +75,9 @@ export default function MessagesTab() {
             <View key={conversation.id} style={{ padding: 10 }}>
               <ConversationCard
                 recipient={recipient}
+                recipientId={recipientId}
                 title={conversation.title}
+                conversationId={conversation.id}
                 lastMessageContent={conversation.last_message_content}
                 lastMessageAt={conversation.last_message_at}
                 eventHandler={() =>

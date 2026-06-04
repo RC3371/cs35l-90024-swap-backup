@@ -1,52 +1,93 @@
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
 interface ConversationCardProps {
-    recipient?: string;
+    profilePictureUrl?: string;
+    recipient: string;
+    recipientId?: string;
     title: string;
-    lastMessageContent?: string;
-    lastMessageAt?: string;
+    conversationId?: string;
+    lastMessageAt: string;
+    lastMessageContent: string;
     eventHandler: () => void;
 }
 export const ConversationCard: React.FC<ConversationCardProps> = ({
+  profilePictureUrl,
   recipient,
   title,
   lastMessageContent,
   lastMessageAt,
-  eventHandler
+  eventHandler,
 }) => {
-    const displayName = recipient || 'Unknown name';
-    const initials = displayName
-      .split(' ')
-      .filter(Boolean)
-      .map(word => word[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
-    const hoursAgo = lastMessageAt
-      ? Math.max(0, Math.floor((Date.now() - new Date(lastMessageAt).getTime()) / 3600000))
-      : null;
+    const timeAgo = () => {
+        if (!lastMessageAt) return '';
+
+        const timeDifference = Date.now() - new Date(lastMessageAt).getTime();
+        const secondsDifference = Math.ceil(timeDifference / 1000);
+        const minutesDifference = Math.ceil(secondsDifference / 60);
+        const hoursDifference = Math.ceil(minutesDifference / 60);
+        const daysDifference = Math.ceil(hoursDifference / 24);
+        const weeksDifference = Math.ceil(daysDifference / 7);
+        const yearsDifference = Math.ceil(weeksDifference / 52);
+
+        if (secondsDifference < 60) return 'just now';
+        if (minutesDifference < 60) return `${minutesDifference}m ago`;
+        if (hoursDifference < 24) return `${hoursDifference}h ago`;
+        if (daysDifference < 7) return `${daysDifference}d ago`;
+        if (weeksDifference < 52) return `${weeksDifference}w ago`;
+        return `${yearsDifference}y ago`;
+    };
+
     return (
-    <TouchableOpacity onPress={eventHandler} style={{ padding: 10, borderWidth: 1 ,borderRadius: 10}}>
-        <View style={{flexDirection:'row', justifyContent: "space-between"}}>
-            <View style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor:"#2774AE",
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}>
-                <Text>{initials}</Text>
+    <TouchableOpacity onPress={eventHandler} style={styles.card}>
+        <View style={styles.row}>
+            <View style={styles.profilePictureBackground}>
+                {profilePictureUrl ? (
+                  <Image source={{ uri: profilePictureUrl }} style={styles.profilePicture} />
+                ) : (
+                  <Ionicons name="person" size={24} color="white" />
+                )}
             </View>
-            <View style={{flexDirection:'column'}}>
-                <Text>{displayName}</Text>
+            <View style={styles.content}>
+                <Text>{recipient}</Text>
                 <Text>{title}</Text>
-                <Text>{lastMessageContent || 'No messages yet'}</Text>
+                <Text>{lastMessageContent}</Text>
             </View>
             <View>
-                <Text>{hoursAgo === null ? '' : `${hoursAgo}h ago`}</Text>
+                <Text>{timeAgo()}</Text>
             </View>
         </View>
     </TouchableOpacity>
     );
 };
+
+const styles = StyleSheet.create({
+    card: {
+        padding: 10,
+        borderWidth: 1,
+        borderRadius: 10,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    content: {
+        flex: 1,
+        flexDirection: 'column',
+        marginHorizontal: 10,
+    },
+    profilePictureBackground: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'grey',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    profilePicture: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+    },
+});
