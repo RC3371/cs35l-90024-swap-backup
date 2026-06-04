@@ -1,4 +1,4 @@
-import { Agreement } from '@/components/Agreement.types';
+import { Agreement, AGREEMENT_STATUS_LABEL } from '@/components/Agreement.types';
 import { subscribeToAgreement } from '@/constants/agreements';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -28,15 +28,6 @@ export const AgreementCard: React.FC<AgreementCardProps> = ({
     });
     return unsub;
   }, [agreementId]);
-
-  const statusLabel: Record<Agreement['status'], string> = {
-    draft: 'Draft',
-    sent: 'Awaiting acceptance',
-    accepted: 'Accepted',
-    'edit-requested': 'Edit proposed',
-    'completion-requested': 'Completion pending',
-    completed: 'Completed',
-  };
 
   return (
     <TouchableOpacity
@@ -68,7 +59,9 @@ export const AgreementCard: React.FC<AgreementCardProps> = ({
             {agreement.unit ? `/${agreement.unit}` : ''}
           </Text>
           <View style={styles.statusPill}>
-            <Text style={styles.statusText}>{statusLabel[agreement.status]}</Text>
+            <Text style={styles.statusText}>
+              {AGREEMENT_STATUS_LABEL[agreement.status]}
+            </Text>
           </View>
         </>
       ) : (

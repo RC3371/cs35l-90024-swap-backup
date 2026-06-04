@@ -1,5 +1,10 @@
-import { Agreement } from '@/components/Agreement.types';
-import { subscribeToAgreementsForUser } from '@/constants/agreements';
+import {
+  Agreement,
+  AgreementStatus,
+  AGREEMENT_STATUS_LABEL,
+  roleOf,
+} from '@/components/Agreement.types';
+import { subscribeToAgreementsForUser, toMillis } from '@/constants/agreements';
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -14,16 +19,15 @@ import {
   View,
 } from 'react-native';
 
-const STATUS_META: Record<
-  Agreement['status'],
-  { label: string; bg: string; fg: string }
-> = {
-  draft: { label: 'Draft', bg: '#f3f4f6', fg: '#374151' },
-  sent: { label: 'Awaiting acceptance', bg: '#eef2ff', fg: '#1e40af' },
-  accepted: { label: 'Accepted', bg: '#dcfce7', fg: '#166534' },
-  'edit-requested': { label: 'Edit proposed', bg: '#fef3c7', fg: '#92400e' },
-  'completion-requested': { label: 'Completion pending', bg: '#e0f2fe', fg: '#075985' },
-  completed: { label: 'Completed', bg: '#e5e7eb', fg: '#374151' },
+// Labels live in AGREEMENT_STATUS_LABEL (shared); only the pill colors are
+// specific to this screen.
+const STATUS_COLORS: Record<AgreementStatus, { bg: string; fg: string }> = {
+  draft: { bg: '#f3f4f6', fg: '#374151' },
+  sent: { bg: '#eef2ff', fg: '#1e40af' },
+  accepted: { bg: '#dcfce7', fg: '#166534' },
+  'edit-requested': { bg: '#fef3c7', fg: '#92400e' },
+  'completion-requested': { bg: '#e0f2fe', fg: '#075985' },
+  completed: { bg: '#e5e7eb', fg: '#374151' },
 };
 
 // Agreements still needing attention sort above settled (accepted) ones.
@@ -46,13 +50,6 @@ const FILTERS: { key: RoleFilter; label: string }[] = [
 ];
 
 const isCompleted = (a: Agreement) => a.status === 'completed';
-
-function toMillis(value: any): number {
-  if (value == null) return 0;
-  if (typeof value === 'number') return value;
-  if (typeof value.toMillis === 'function') return value.toMillis();
-  return 0;
-}
 
 export default function AgreementsTab() {
   const router = useRouter();
@@ -87,8 +84,8 @@ export default function AgreementsTab() {
     return unsub;
   }, [uid]);
 
-  const isProviding = (a: Agreement) => a.providerUid === uid;
-  const isBuying = (a: Agreement) => a.buyerUid === uid;
+  const isProviding = (a: Agreement) => roleOf(a, uid) === 'provider';
+  const isBuying = (a: Agreement) => roleOf(a, uid) === 'buyer';
 
   // The role filters (All / Providing / Buying) show only active agreements;
   // completed ones live under their own filter so they stay viewable.
@@ -123,7 +120,8 @@ export default function AgreementsTab() {
   }, [agreements, filter, uid]);
 
   function renderItem({ item }: { item: Agreement }) {
-    const meta = STATUS_META[item.status];
+    const colors = STATUS_COLORS[item.status];
+    const statusLabel = AGREEMENT_STATUS_LABEL[item.status];
     const youAre = isProviding(item) ? 'Provider' : isBuying(item) ? 'Buyer' : 'Observer';
     const otherName = isProviding(item) ? item.buyerName : item.providerName;
     const dateText =
@@ -145,8 +143,8 @@ export default function AgreementsTab() {
           <Text style={styles.cardTitle} numberOfLines={1}>
             {item.listingTitle}
           </Text>
-          <View style={[styles.statusPill, { backgroundColor: meta.bg }]}>
-            <Text style={[styles.statusText, { color: meta.fg }]}>{meta.label}</Text>
+          <View style={[styles.statusPill, { backgroundColor: colors.bg }]}>
+            <Text style={[styles.statusText, { color: colors.fg }]}>{statusLabel}</Text>
           </View>
         </View>
 

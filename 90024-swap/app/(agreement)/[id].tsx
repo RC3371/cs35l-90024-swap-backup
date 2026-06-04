@@ -1,5 +1,5 @@
 import { Calendar } from '@/components/Calendar';
-import { Agreement, AgreementEditable } from '@/components/Agreement.types';
+import { Agreement, AgreementEditable, roleOf } from '@/components/Agreement.types';
 import {
   acceptPendingEdit,
   cancelCompletion,
@@ -68,14 +68,8 @@ export default function AgreementDetail() {
     );
   }
 
-  const isParty =
-    myUid === agreement.providerUid || myUid === agreement.buyerUid;
-  const myRole: 'provider' | 'buyer' | 'observer' =
-    myUid === agreement.providerUid
-      ? 'provider'
-      : myUid === agreement.buyerUid
-      ? 'buyer'
-      : 'observer';
+  const myRole = roleOf(agreement, myUid);
+  const isParty = myRole !== 'observer';
 
   const pending = agreement.pendingEdit ?? null;
   const iProposedEdit = !!pending && pending.proposerUid === myUid;

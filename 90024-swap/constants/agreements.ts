@@ -65,7 +65,7 @@ export function subscribeToAgreement(
 
 // Firestore stores createdAt/updatedAt as serverTimestamp() (a Timestamp once
 // read back), but a doc written locally may still hold a number. Normalize.
-function toMillis(value: any): number {
+export function toMillis(value: any): number {
   if (value == null) return 0;
   if (typeof value === 'number') return value;
   if (typeof value.toMillis === 'function') return value.toMillis();
