@@ -25,6 +25,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   onDelete,
   onArchive,
   onUnarchive,
+  onPublish,
   isSaved,
   onToggleSave,
   viewerUid
@@ -132,11 +133,16 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             </Text>
           </TouchableOpacity>
 
-          {(onEdit || onArchive || onUnarchive || onDelete) && (
+          {(onEdit || onArchive || onUnarchive || onPublish || onDelete) && (
             <View style={styles.actionRow}>
               {onEdit && (
                 <TouchableOpacity onPress={onEdit} style={styles.actionButton}>
                   <Text style={styles.editText}>Edit</Text>
+                </TouchableOpacity>
+              )}
+              {onPublish && (
+                <TouchableOpacity onPress={onPublish} style={styles.actionButton}>
+                  <Text style={styles.publishText}>Publish</Text>
                 </TouchableOpacity>
               )}
               {onArchive && (
@@ -326,6 +332,11 @@ const styles = StyleSheet.create({
   },
   archiveText: {
     color: '#b45309',
+    fontWeight: '600',
+    fontSize: 13
+  },
+  publishText: {
+    color: '#15803d',
     fontWeight: '600',
     fontSize: 13
   },

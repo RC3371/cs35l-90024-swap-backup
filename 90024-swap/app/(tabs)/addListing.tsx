@@ -1,7 +1,13 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { createListing, getListing, updateListing } from '@/services/listings';
+import {
+  createListing,
+  getListing,
+  ListingStatus,
+  setListingStatus,
+  updateListing,
+} from '@/services/listings';
 import { getUserProfile } from '@/services/users';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import {
     Alert,
@@ -37,39 +43,50 @@ export default function AddListing() {
   const [topicDropdownOpen, setTopicDropdownOpen] = React.useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
+  // Status of the listing being edited ('draft' vs 'active'); undefined when creating.
+  const [editStatus, setEditStatus] = React.useState<ListingStatus | undefined>();
+  const isDraft = editStatus === 'draft';
 
   // In edit mode, load the existing listing and prefill the form. In create
-  // mode (no listingId) reset to a blank form — the tab stays mounted, so
-  // without this it would keep stale data from a previous edit.
-  React.useEffect(() => {
-    if (!listingId) {
-      setNewListing({
-        title: '',
-        author: '',
-        price: 0,
-        unit: '',
-        topic: [],
-        category: Categories.Skills,
-        version: 'compact',
-        description: '',
-      });
-      return;
-    }
-    let active = true;
-    (async () => {
-      const listing = await getListing(listingId);
-      if (active && listing) {
+  // mode (no listingId) reset to a blank form. This runs on every focus (not
+  // just when listingId changes) because the tab stays mounted — otherwise
+  // re-opening "New" after creating a listing would keep the stale data.
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!listingId) {
+        setEditStatus(undefined);
         setNewListing({
-          ...listing,
+          title: '',
+          author: '',
+          price: 0,
+          unit: '',
+          topic: [],
+          category: Categories.Skills,
           version: 'compact',
-          description: listing.description ?? '',
+          description: '',
         });
+        setTopicDropdownOpen(false);
+        setCategoryDropdownOpen(false);
+        setFocusedField('');
+        return;
       }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [listingId]);
+      let active = true;
+      (async () => {
+        const listing = await getListing(listingId);
+        if (active && listing) {
+          setEditStatus(listing.status);
+          setNewListing({
+            ...listing,
+            version: 'compact',
+            description: listing.description ?? '',
+          });
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [listingId]),
+  );
 
   const topics = Object.values(Topics) as Topics[];
   const categories = Object.values(Categories) as Categories[];
@@ -101,13 +118,14 @@ export default function AddListing() {
     setCategoryDropdownOpen(false);
   }
 
-  async function handleSubmit() {
-    if (!newListing.title.trim()) {
+  // target 'active' = post/publish (requires a title); 'draft' = save privately.
+  async function save(target: ListingStatus) {
+    if (target === 'active' && !newListing.title.trim()) {
       Alert.alert('Missing title', 'Please give your listing a title.');
       return;
     }
     if (!user) {
-      Alert.alert('Not signed in', 'You must be signed in to post a listing.');
+      Alert.alert('Not signed in', 'You must be signed in to save a listing.');
       return;
     }
 
@@ -127,8 +145,13 @@ export default function AddListing() {
 
       if (isEdit && listingId) {
         await updateListing(listingId, withContact);
+        // Publishing a draft (or keeping a draft a draft) needs an explicit
+        // status write; editing an already-active listing leaves it active.
+        if (target !== editStatus) {
+          await setListingStatus(listingId, target);
+        }
       } else {
-        await createListing(withContact, user.uid, user.displayName ?? 'Anonymous');
+        await createListing(withContact, user.uid, user.displayName ?? 'Anonymous', target);
       }
       router.back();
     } catch (err) {
@@ -342,13 +365,31 @@ export default function AddListing() {
           <TouchableOpacity style={[styles.actionButton, styles.cancelAction]} onPress={handleClose}>
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
+
+          {/* Save Draft is offered for new listings and when editing a draft. */}
+          {(!isEdit || isDraft) && (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.draftAction, submitting && styles.disabledAction]}
+              onPress={() => save('draft')}
+              disabled={submitting}
+            >
+              <Text style={styles.draftText}>{submitting ? '...' : 'Save Draft'}</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             style={[styles.actionButton, styles.primaryAction, submitting && styles.disabledAction]}
-            onPress={handleSubmit}
+            onPress={() => save('active')}
             disabled={submitting}
           >
             <Text style={styles.primaryText}>
-              {submitting ? 'Saving...' : isEdit ? 'Save Changes' : 'Post Listing'}
+              {submitting
+                ? 'Saving...'
+                : !isEdit
+                  ? 'Post Listing'
+                  : isDraft
+                    ? 'Publish'
+                    : 'Save Changes'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -512,6 +553,15 @@ const styles = StyleSheet.create({
   },
   primaryAction: {
     backgroundColor: '#2563eb'
+  },
+  draftAction: {
+    borderWidth: 1,
+    borderColor: '#2563eb',
+    backgroundColor: '#eef2ff'
+  },
+  draftText: {
+    color: '#2563eb',
+    fontWeight: '700'
   },
   disabledAction: {
     opacity: 0.6
