@@ -88,8 +88,12 @@ export default function Feed() {
     }
 
 
+    if (selectedPill !== 'All') {
+        filteredData = filteredData.filter(item => item.topic?.includes(selectedPill));
+    }
+
     if (filterSearch.trim() !== '') {
-        filteredData = filteredData.filter(item => 
+        filteredData = filteredData.filter(item =>
             item.title.toLowerCase().includes(filterSearch.toLowerCase()) ||
             item.description?.toLowerCase().includes(filterSearch.toLowerCase())
         );
