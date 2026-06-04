@@ -291,7 +291,7 @@ export function ProfileView({ uid, isOwner }: Props) {
 
   const nameGate = canChangeDisplayName(profile);
 
-  const activeListings = listings.filter((l) => l.status !== 'archived');
+  const activeListings = listings.filter((l) => l.status === 'active');
   const archivedListings = listings.filter((l) => l.status === 'archived');
 
   // Which list to render for the current tab.

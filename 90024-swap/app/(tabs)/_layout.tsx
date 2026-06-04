@@ -36,7 +36,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="addListing"
+        name="drafts"
         options={{
           tabBarLabel: 'Add',
           tabBarIcon: ({color, size}) => (
@@ -44,6 +44,9 @@ export default function TabsLayout() {
           )
         }}
       />
+      {/* The create/edit form is reached from the Drafts screen and the profile
+          edit flow via router.push; hidden from the tab bar. */}
+      <Tabs.Screen name="addListing" options={{ href: null }} />
       <Tabs.Screen
         name="agreements"
         options={{

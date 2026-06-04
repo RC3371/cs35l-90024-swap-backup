@@ -17,7 +17,7 @@ import {
 
 const LISTINGS = 'listings';
 
-export type ListingStatus = 'active' | 'archived';
+export type ListingStatus = 'active' | 'archived' | 'draft';
 
 // The persisted shape of a listing. Mirrors the fields collected by the
 // Add Listing form, plus ownership/identity metadata.
@@ -72,7 +72,12 @@ function mapDoc(id: string, data: any): Listing {
     phone: data.phone,
     imageUrl: data.imageUrl,
     // Listings created before the archive feature have no status -> treat as active.
-    status: data.status === 'archived' ? 'archived' : 'active',
+    status:
+      data.status === 'archived'
+        ? 'archived'
+        : data.status === 'draft'
+          ? 'draft'
+          : 'active',
   };
 }
 
@@ -81,12 +86,13 @@ export async function createListing(
   data: Partial<ListingCardProps>,
   owner: string,
   author: string,
+  status: ListingStatus = 'active',
 ): Promise<string> {
   const ref = await addDoc(collection(db, LISTINGS), {
     ...toListingData(data),
     owner,
     author,
-    status: 'active' as ListingStatus,
+    status,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -122,7 +128,15 @@ export async function getAllListings(): Promise<Listing[]> {
   const snap = await getDocs(q);
   return snap.docs
     .map((d) => mapDoc(d.id, d.data()))
-    .filter((l) => l.status !== 'archived');
+    .filter((l) => l.status === 'active');
+}
+
+// Draft listings owned by a user, newest first (the Drafts tab). Filtered
+// client-side off getUserListings so we don't need a composite owner+status
+// index.
+export async function getUserDrafts(uid: string): Promise<Listing[]> {
+  const listings = await getUserListings(uid);
+  return listings.filter((l) => l.status === 'draft');
 }
 
 // Update an existing listing's editable fields.
